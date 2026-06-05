@@ -312,41 +312,13 @@ async function apiGet(params) {
   return res.json();
 }
 
-// ── ENVIO DE ESCRITA via formulário oculto ───────────────────
-// Apps Script redireciona para script.googleusercontent.com (domínio diferente),
-// o que bloqueia CORS no fetch normal. Solução: submit de form em iframe oculto.
-// O browser não tenta ler a resposta, então não há bloqueio.
-function enviarEscrita(body) {
-  return new Promise((resolve) => {
-    const uid = 'f' + Date.now();
-
-    const iframe = document.createElement('iframe');
-    iframe.name = uid;
-    iframe.style.cssText = 'display:none;width:0;height:0;border:0;';
-    document.body.appendChild(iframe);
-
-    const form = document.createElement('form');
-    form.method = 'GET';
-    form.action = API_URL;
-    form.target = uid;
-    form.style.cssText = 'display:none;';
-
-    const inp = document.createElement('input');
-    inp.type = 'hidden';
-    inp.name = 'payload';
-    inp.value = JSON.stringify(body);
-    form.appendChild(inp);
-    document.body.appendChild(form);
-
-    form.submit();
-
-    // Limpa após 3s e resolve
-    setTimeout(() => {
-      try { document.body.removeChild(form); } catch(e){}
-      try { document.body.removeChild(iframe); } catch(e){}
-      resolve();
-    }, 3000);
-  });
+// ── ENVIO DE ESCRITA via GET + base64 (mesmo padrão do projeto MRD) ────────
+async function enviarEscrita(body) {
+  const json   = JSON.stringify(body);
+  const base64 = btoa(unescape(encodeURIComponent(json)));
+  const url    = API_URL + '?method=post&payload=' + encodeURIComponent(base64);
+  const res    = await fetch(url);
+  return res.json();
 }
 
 // ── CARREGAR TUDO ────────────────────────────────────────────
@@ -524,9 +496,6 @@ async function salvarTarefa() {
     : { action:'add',    aba,           dados: payload };
 
   await enviarEscrita(body);
-
-  // Aguarda o Sheets processar e recarrega
-  await new Promise(r => setTimeout(r, 3500));
   await recarregarTudo();
 }
 
@@ -534,7 +503,6 @@ async function deletarTarefa(aba, rowIndex) {
   if (!confirm('Excluir esta tarefa da planilha?')) return;
   syncStart();
   await enviarEscrita({ action:'delete', aba, rowIndex });
-  await new Promise(r => setTimeout(r, 3500));
   await recarregarTudo();
 }
 
