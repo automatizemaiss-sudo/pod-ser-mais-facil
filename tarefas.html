@@ -471,11 +471,40 @@ async function api(params) {
 
 async function apiPost(body) {
   if (!API_URL) return null;
-  // Apps Script bloqueia POST com CORS de origens externas.
-  // Solução: enviar como GET com parâmetro "payload".
-  const url = API_URL + '?payload=' + encodeURIComponent(JSON.stringify(body));
-  const res = await fetch(url);
-  return res.json();
+  console.log('[PSF] apiPost payload:', JSON.stringify(body));
+
+  return new Promise((resolve) => {
+    // Iframe oculto para receber o redirect do Apps Script sem bloquear CORS
+    const iframe = document.createElement('iframe');
+    iframe.name = 'psf_submit_' + Date.now();
+    iframe.style.cssText = 'display:none;position:absolute;';
+    document.body.appendChild(iframe);
+
+    // Form que submete para o iframe — evita bloqueio CORS no browser
+    const form = document.createElement('form');
+    form.method = 'GET';
+    form.action = API_URL;
+    form.target = iframe.name;
+    form.style.cssText = 'display:none;position:absolute;';
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'payload';
+    input.value = JSON.stringify(body);
+    form.appendChild(input);
+
+    document.body.appendChild(form);
+
+    // Limpa após 5s
+    setTimeout(() => {
+      try { document.body.removeChild(form); } catch(e) {}
+      try { document.body.removeChild(iframe); } catch(e) {}
+      resolve({ ok: true });
+    }, 5000);
+
+    form.submit();
+    console.log('[PSF] form submetido para:', iframe.name);
+  });
 }
 
 // ── SYNC UI ─────────────────────────────────────────────────
@@ -685,37 +714,39 @@ async function salvarTarefa() {
     status:    document.getElementById('fStatus').value,
   };
 
+  console.log('[PSF] salvarTarefa:', { modoEdicao, aba, rowIndex, dados_ });
   fecharModal();
+  syncStart();
 
   try {
-    let res;
     if (modoEdicao && rowIndex) {
-      res = await apiPost({ action: 'update', aba, rowIndex, dados: dados_ });
+      await apiPost({ action: 'update', aba, rowIndex, dados: dados_ });
     } else {
-      res = await apiPost({ action: 'add', aba, dados: dados_ });
-    }
-
-    if (res?.ok) {
-      await recarregarTudo();
-    } else {
-      console.error('Erro ao salvar:', res);
+      await apiPost({ action: 'add', aba, dados: dados_ });
     }
   } catch(err) {
-    console.error('Erro na requisição:', err);
+    console.error('[PSF] Erro no apiPost:', err);
   }
+
+  // Aguarda 4s para o Sheets processar antes de recarregar
+  console.log('[PSF] Aguardando Sheets processar…');
+  await new Promise(r => setTimeout(r, 4000));
+  await recarregarTudo();
 }
 
 async function deletarTarefa(aba, rowIndex) {
   if (!confirm('Excluir esta tarefa da planilha?')) return;
+  syncStart();
 
   try {
-    const res = await apiPost({ action: 'delete', aba, rowIndex });
-    if (res?.ok) {
-      await recarregarTudo();
-    }
+    await apiPost({ action: 'delete', aba, rowIndex });
   } catch(err) {
-    console.error('Erro ao deletar:', err);
+    console.error('[PSF] Erro ao deletar:', err);
   }
+
+  console.log('[PSF] Aguardando Sheets processar exclusão…');
+  await new Promise(r => setTimeout(r, 4000));
+  await recarregarTudo();
 }
 
 // ── UTILS ───────────────────────────────────────────────────
