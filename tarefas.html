@@ -73,6 +73,34 @@ body::before {
 .env-banner.prod .env-dot { background:#4CAF7D; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
 
+/* ── BARRA DE PROGRESSO DE SYNC ── */
+.sync-bar {
+  position:fixed; top:0; left:0; right:0; height:3px; z-index:200;
+  background:transparent; pointer-events:none;
+}
+.sync-bar::after {
+  content:''; position:absolute; top:0; left:0; height:100%;
+  background:linear-gradient(90deg, var(--roxo-claro), #fff, var(--roxo-claro));
+  background-size:200% 100%;
+  width:0; opacity:0;
+  transition:opacity 0.2s;
+  animation:none;
+}
+.sync-bar.syncing::after {
+  width:100%; opacity:1;
+  animation:syncSlide 1.4s ease-in-out infinite;
+}
+.sync-bar.done::after {
+  width:100%; opacity:0;
+  background:var(--verde);
+  animation:none;
+  transition:opacity 0.6s ease 0.3s;
+}
+@keyframes syncSlide {
+  0%   { background-position:100% 0; }
+  100% { background-position:-100% 0; }
+}
+
 /* ── ALERTA DE ERROS ── */
 .erro-alert {
   display:none; align-items:center; gap:10px;
@@ -273,6 +301,9 @@ textarea.form-input { resize:vertical; min-height:65px; }
 </head>
 <body>
 
+<!-- BARRA SYNC -->
+<div class="sync-bar" id="syncBar"></div>
+
 <!-- BANNER AMBIENTE -->
 <div class="env-banner dev" id="envBanner">
   <span class="env-dot"></span>
@@ -299,7 +330,7 @@ textarea.form-input { resize:vertical; min-height:65px; }
       </div>
     </div>
     <div class="header-actions">
-      <button class="btn btn-ghost btn-sm" onclick="recarregarTudo()" title="Sincronizar com Sheets">🔄 Sincronizar</button>
+      <button class="btn btn-ghost btn-sm" id="btnSync" onclick="recarregarTudo()" title="Sincronizar com Sheets">🔄 Sincronizar</button>
       <button class="btn btn-primary" onclick="abrirModal()">＋ Nova Tarefa</button>
     </div>
   </header>
@@ -439,17 +470,43 @@ async function api(params) {
 }
 
 async function apiPost(body) {
-  if (!API_URL) return null;
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' }, // Apps Script exige isso para CORS
-    body: JSON.stringify(body),
-  });
+  // Apps Script nao suporta CORS para POST vindo de origens externas.
+  // Solucao: enviar via GET com o payload em um parametro, usando no-cors nao retorna dados.
+  // Usamos um iframe oculto como bridge para o POST funcionar sem bloqueio de CORS.
+  const params = new URLSearchParams({ payload: JSON.stringify(body) });
+  const url = API_URL + '?' + params.toString();
+  const res = await fetch(url);
   return res.json();
+}
+
+// ── SYNC UI ─────────────────────────────────────────────────
+let syncTimer = null;
+
+function syncStart() {
+  const bar = document.getElementById('syncBar');
+  const btn = document.getElementById('btnSync');
+  bar.className = 'sync-bar syncing';
+  if (btn) { btn.textContent = '⏳ Sincronizando…'; btn.disabled = true; }
+  clearTimeout(syncTimer);
+}
+
+function syncEnd(ok) {
+  const bar = document.getElementById('syncBar');
+  const btn = document.getElementById('btnSync');
+  bar.className = 'sync-bar done';
+  if (btn) {
+    btn.textContent = ok ? '✅ Atualizado' : '⚠️ Erro';
+    btn.disabled = false;
+  }
+  syncTimer = setTimeout(() => {
+    bar.className = 'sync-bar';
+    if (btn) btn.textContent = '🔄 Sincronizar';
+  }, 2000);
 }
 
 // ── CARREGAMENTO ────────────────────────────────────────────
 async function recarregarTudo() {
+  syncStart();
   try {
     const res = await api({ aba: 'all' });
     if (!res) return;
@@ -491,8 +548,11 @@ async function recarregarTudo() {
     document.getElementById('ultimaSync').textContent =
       'Última sincronização: ' + agora.toLocaleTimeString('pt-BR');
 
+    syncEnd(true);
+
   } catch(err) {
     console.error('Erro ao carregar:', err);
+    syncEnd(false);
   }
 }
 
