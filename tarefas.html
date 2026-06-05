@@ -470,11 +470,10 @@ async function api(params) {
 }
 
 async function apiPost(body) {
-  // Apps Script nao suporta CORS para POST vindo de origens externas.
-  // Solucao: enviar via GET com o payload em um parametro, usando no-cors nao retorna dados.
-  // Usamos um iframe oculto como bridge para o POST funcionar sem bloqueio de CORS.
-  const params = new URLSearchParams({ payload: JSON.stringify(body) });
-  const url = API_URL + '?' + params.toString();
+  if (!API_URL) return null;
+  // Apps Script bloqueia POST com CORS de origens externas.
+  // Solução: enviar como GET com parâmetro "payload".
+  const url = API_URL + '?payload=' + encodeURIComponent(JSON.stringify(body));
   const res = await fetch(url);
   return res.json();
 }
