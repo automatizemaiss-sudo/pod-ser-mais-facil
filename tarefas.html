@@ -6,892 +6,732 @@
 <title>Pod Ser + Fácil — Painel do Projeto</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --roxo: #7B5EA7;
-    --roxo-escuro: #5C4280;
-    --roxo-claro: #A98DD4;
-    --roxo-bg: #EEE8F7;
-    --roxo-deep: #3D2960;
-    --bege: #F5EDD8;
-    --bege-escuro: #D4C4A0;
-    --bege-medio: #E8D9BB;
-    --verde: #4CAF7D;
-    --verde-bg: #E8F5EE;
-    --amarelo: #F0A500;
-    --amarelo-bg: #FFF4DC;
-    --vermelho: #E05050;
-    --vermelho-bg: #FCEAEA;
-    --azul: #4A90D9;
-    --azul-bg: #E8F1FA;
-    --cinza: #6B7280;
-    --cinza-bg: #F3F4F6;
-    --branco: #FFFFFF;
-    --texto: #2D1F45;
-    --texto-suave: #6B5B8A;
-    --borda: rgba(123, 94, 167, 0.15);
-    --sombra: 0 2px 12px rgba(93, 63, 140, 0.10);
-    --sombra-hover: 0 4px 20px rgba(93, 63, 140, 0.18);
-  }
+:root {
+  --roxo: #7B5EA7;
+  --roxo-escuro: #5C4280;
+  --roxo-claro: #A98DD4;
+  --roxo-bg: #EEE8F7;
+  --roxo-deep: #3D2960;
+  --bege: #F5EDD8;
+  --bege-escuro: #D4C4A0;
+  --verde: #4CAF7D;
+  --verde-bg: #E8F5EE;
+  --amarelo: #E8A000;
+  --amarelo-bg: #FFF4DC;
+  --vermelho: #E05050;
+  --vermelho-bg: #FCEAEA;
+  --laranja: #E07830;
+  --laranja-bg: #FEF0E6;
+  --azul: #4A90D9;
+  --azul-bg: #E8F1FA;
+  --cinza: #6B7280;
+  --cinza-bg: #F3F4F6;
+  --revisao-bg: #F0E8FF;
+  --revisao: #8B3FC8;
+  --texto: #2D1F45;
+  --texto-suave: #6B5B8A;
+  --borda: rgba(123,94,167,0.15);
+  --sombra: 0 2px 12px rgba(93,63,140,0.10);
+}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin:0; padding:0; box-sizing:border-box; }
 
-  body {
-    font-family: 'Nunito Sans', sans-serif;
-    background: #F0EAF8;
-    color: var(--texto);
-    min-height: 100vh;
-  }
+body {
+  font-family: 'Nunito Sans', sans-serif;
+  background: #F0EAF8;
+  color: var(--texto);
+  min-height: 100vh;
+}
 
-  /* Fundo com textura sutil */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      radial-gradient(circle at 20% 20%, rgba(169,141,212,0.18) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(240,210,140,0.14) 0%, transparent 50%),
-      radial-gradient(circle at 60% 10%, rgba(123,94,167,0.10) 0%, transparent 40%);
-    pointer-events: none;
-    z-index: 0;
-  }
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(169,141,212,0.18) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(240,210,140,0.14) 0%, transparent 50%);
+  pointer-events:none; z-index:0;
+}
 
-  .wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+.wrapper { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:0 1.5rem 3rem; }
 
-  /* ── HEADER ── */
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.8rem 0 1.4rem;
-    border-bottom: 1.5px solid var(--borda);
-    margin-bottom: 2rem;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-  .header-left { display: flex; align-items: center; gap: 1rem; }
+/* ── BANNER DE STATUS (DESENVOLVIMENTO / PRODUÇÃO) ── */
+.env-banner {
+  display:flex; align-items:center; justify-content:center;
+  gap:10px; padding:0.55rem 1rem;
+  font-family:'Nunito', sans-serif; font-size:0.78rem; font-weight:800;
+  letter-spacing:0.8px; text-transform:uppercase;
+  position:sticky; top:0; z-index:100;
+  transition: background 0.4s, color 0.4s;
+}
+.env-banner.dev  { background:#3D2960; color:#C9A8FF; }
+.env-banner.prod { background:#1A4731; color:#6EE7A8; }
+.env-banner .env-dot {
+  width:8px; height:8px; border-radius:50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+.env-banner.dev .env-dot  { background:#A855F7; }
+.env-banner.prod .env-dot { background:#4CAF7D; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
 
-  .logo-icon {
-    width: 52px; height: 52px;
-    background: var(--roxo-deep);
-    border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-    box-shadow: 0 3px 12px rgba(61,41,96,0.35);
-    flex-shrink: 0;
-    position: relative;
-    overflow: hidden;
-  }
-  .logo-icon::after {
-    content: '';
-    position: absolute;
-    top: -4px; right: -4px;
-    width: 16px; height: 16px;
-    background: var(--amarelo);
-    border-radius: 50%;
-    opacity: 0.85;
-  }
+/* ── ALERTA DE ERROS ── */
+.erro-alert {
+  display:none; align-items:center; gap:10px;
+  background: var(--vermelho-bg);
+  border: 1.5px solid rgba(224,80,80,0.3);
+  border-radius:12px; padding:0.7rem 1.1rem;
+  margin-bottom:1rem;
+  font-family:'Nunito', sans-serif; font-size:0.85rem; font-weight:700;
+  color: var(--vermelho);
+  cursor:pointer;
+  transition: background 0.15s;
+}
+.erro-alert:hover { background:#f8d5d5; }
+.erro-alert.visible { display:flex; }
+.erro-alert .erro-icon { font-size:1.1rem; }
 
-  .header-title h1 {
-    font-family: 'Nunito', sans-serif;
-    font-weight: 900;
-    font-size: 1.55rem;
-    color: var(--roxo-deep);
-    letter-spacing: -0.3px;
-    line-height: 1.2;
-  }
-  .header-title p {
-    font-size: 0.82rem;
-    color: var(--texto-suave);
-    font-weight: 600;
-    margin-top: 2px;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-  }
+/* ── HEADER ── */
+.header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:1.6rem 0 1.2rem; border-bottom:1.5px solid var(--borda);
+  margin-bottom:1.5rem; gap:1rem; flex-wrap:wrap;
+}
+.header-left { display:flex; align-items:center; gap:1rem; }
+.logo-icon {
+  width:50px; height:50px; background:var(--roxo-deep); border-radius:14px;
+  display:flex; align-items:center; justify-content:center; font-size:26px;
+  box-shadow:0 3px 12px rgba(61,41,96,0.35); flex-shrink:0; position:relative;
+}
+.logo-icon::after {
+  content:''; position:absolute; top:-4px; right:-4px;
+  width:14px; height:14px; background:var(--amarelo); border-radius:50%; opacity:0.9;
+}
+.header-title h1 {
+  font-family:'Nunito', sans-serif; font-weight:900; font-size:1.45rem;
+  color:var(--roxo-deep); letter-spacing:-0.3px; line-height:1.2;
+}
+.header-title p { font-size:0.78rem; color:var(--texto-suave); font-weight:600; margin-top:2px; letter-spacing:0.4px; text-transform:uppercase; }
+.header-actions { display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; }
 
-  .header-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+/* ── BOTÕES ── */
+.btn {
+  font-family:'Nunito', sans-serif; font-weight:700; font-size:0.83rem;
+  border:none; border-radius:10px; cursor:pointer; padding:0.55rem 1rem;
+  transition:all 0.18s ease; display:inline-flex; align-items:center; gap:6px;
+}
+.btn-primary { background:var(--roxo); color:white; box-shadow:0 2px 8px rgba(123,94,167,0.35); }
+.btn-primary:hover { background:var(--roxo-escuro); transform:translateY(-1px); }
+.btn-ghost { background:rgba(123,94,167,0.08); color:var(--roxo-escuro); border:1.5px solid var(--borda); }
+.btn-ghost:hover { background:var(--roxo-bg); }
+.btn-danger { background:var(--vermelho-bg); color:var(--vermelho); border:1px solid rgba(224,80,80,0.2); }
+.btn-danger:hover { background:#f8d5d5; }
+.btn-sm { padding:0.32rem 0.65rem; font-size:0.75rem; border-radius:8px; }
 
-  /* ── BOTÕES ── */
-  .btn {
-    font-family: 'Nunito', sans-serif;
-    font-weight: 700;
-    font-size: 0.85rem;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    padding: 0.6rem 1.1rem;
-    transition: all 0.18s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .btn-primary {
-    background: var(--roxo);
-    color: white;
-    box-shadow: 0 2px 8px rgba(123,94,167,0.35);
-  }
-  .btn-primary:hover { background: var(--roxo-escuro); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(123,94,167,0.4); }
-  .btn-ghost {
-    background: rgba(123,94,167,0.08);
-    color: var(--roxo-escuro);
-    border: 1.5px solid var(--borda);
-  }
-  .btn-ghost:hover { background: var(--roxo-bg); }
-  .btn-danger { background: var(--vermelho-bg); color: var(--vermelho); border: 1px solid rgba(224,80,80,0.2); }
-  .btn-danger:hover { background: #f8d5d5; }
-  .btn-sm { padding: 0.38rem 0.75rem; font-size: 0.78rem; border-radius: 8px; }
+/* ── STATS ── */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+.stat-card {
+  background:white; border-radius:14px; padding:1rem 1.1rem;
+  box-shadow:var(--sombra); border:1px solid var(--borda); transition:transform 0.2s;
+}
+.stat-card:hover { transform:translateY(-2px); }
+.stat-label { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--texto-suave); margin-bottom:0.35rem; }
+.stat-number { font-family:'Nunito', sans-serif; font-weight:900; font-size:1.85rem; line-height:1; }
+.stat-card.s-total .stat-number { color:var(--roxo); }
+.stat-card.s-concluido .stat-number { color:var(--verde); }
+.stat-card.s-andamento .stat-number { color:var(--azul); }
+.stat-card.s-pendente .stat-number { color:var(--amarelo); }
+.stat-card.s-revisao .stat-number { color:var(--revisao); }
 
-  /* ── CARDS DE RESUMO ── */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-  .stat-card {
-    background: white;
-    border-radius: 14px;
-    padding: 1.1rem 1.2rem;
-    box-shadow: var(--sombra);
-    border: 1px solid var(--borda);
-    transition: transform 0.2s;
-  }
-  .stat-card:hover { transform: translateY(-2px); box-shadow: var(--sombra-hover); }
-  .stat-label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--texto-suave);
-    margin-bottom: 0.4rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .stat-number { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 2rem; line-height: 1; }
-  .stat-card.total .stat-number { color: var(--roxo); }
-  .stat-card.andamento .stat-number { color: var(--azul); }
-  .stat-card.feito .stat-number { color: var(--verde); }
-  .stat-card.pendente .stat-number { color: var(--amarelo); }
-  .stat-card.nova .stat-number { color: var(--roxo-claro); }
+/* ── ABAS ── */
+.tabs-nav {
+  display:flex; gap:4px; margin-bottom:0;
+  border-bottom:2px solid rgba(123,94,167,0.12);
+}
+.tab-btn {
+  font-family:'Nunito', sans-serif; font-weight:800; font-size:0.85rem;
+  padding:0.7rem 1.2rem; border:none; background:transparent;
+  color:var(--texto-suave); cursor:pointer; border-radius:10px 10px 0 0;
+  border-bottom:3px solid transparent; margin-bottom:-2px;
+  transition:all 0.15s; display:flex; align-items:center; gap:7px;
+}
+.tab-btn:hover { background:rgba(123,94,167,0.06); color:var(--roxo); }
+.tab-btn.active { color:var(--roxo-deep); border-bottom-color:var(--roxo); background:rgba(123,94,167,0.07); }
+.tab-btn .tab-count {
+  font-size:0.68rem; font-weight:800; padding:1px 7px; border-radius:20px;
+  background:var(--roxo-bg); color:var(--roxo-escuro);
+}
+.tab-btn.active .tab-count { background:var(--roxo); color:white; }
 
-  /* ── FILTROS ── */
-  .filters-bar {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-  }
-  .filter-label { font-size: 0.78rem; font-weight: 700; color: var(--texto-suave); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
-  .filter-chip {
-    font-family: 'Nunito', sans-serif;
-    font-weight: 700;
-    font-size: 0.78rem;
-    padding: 0.38rem 0.9rem;
-    border-radius: 20px;
-    border: 1.5px solid transparent;
-    cursor: pointer;
-    transition: all 0.15s;
-    background: white;
-    color: var(--texto-suave);
-    border-color: var(--borda);
-  }
-  .filter-chip:hover { border-color: var(--roxo-claro); color: var(--roxo); }
-  .filter-chip.active { background: var(--roxo); color: white; border-color: var(--roxo); box-shadow: 0 2px 8px rgba(123,94,167,0.3); }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
 
-  /* ── SEÇÕES ── */
-  .section {
-    background: white;
-    border-radius: 18px;
-    box-shadow: var(--sombra);
-    border: 1px solid var(--borda);
-    margin-bottom: 1.5rem;
-    overflow: hidden;
-  }
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.4rem;
-    border-bottom: 1px solid rgba(123,94,167,0.08);
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.15s;
-  }
-  .section-header:hover { background: rgba(123,94,167,0.03); }
-  .section-header-left { display: flex; align-items: center; gap: 0.75rem; }
-  .section-icon {
-    width: 34px; height: 34px;
-    border-radius: 9px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-    flex-shrink: 0;
-  }
-  .section-title { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 0.97rem; color: var(--texto); }
-  .section-count {
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.72rem; font-weight: 800;
-    background: var(--roxo-bg);
-    color: var(--roxo-escuro);
-    padding: 2px 9px;
-    border-radius: 20px;
-  }
-  .section-toggle { color: var(--texto-suave); font-size: 1.1rem; transition: transform 0.2s; }
-  .section.collapsed .section-toggle { transform: rotate(-90deg); }
-  .section-body { display: block; }
-  .section.collapsed .section-body { display: none; }
+/* ── PAINEL DE TAREFA ── */
+.panel-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:1rem 1.4rem 0.8rem; flex-wrap:wrap; gap:0.75rem;
+}
+.search-wrap { position:relative; }
+.search-wrap input {
+  padding:0.45rem 0.8rem 0.45rem 2rem; width:200px;
+  font-family:'Nunito Sans', sans-serif; font-size:0.83rem;
+  border:1.5px solid var(--borda); border-radius:10px;
+  background:white; color:var(--texto); outline:none; transition:border-color 0.15s;
+}
+.search-wrap input:focus { border-color:var(--roxo); }
+.search-icon { position:absolute; left:0.6rem; top:50%; transform:translateY(-50%); color:var(--texto-suave); font-size:0.8rem; pointer-events:none; }
 
-  /* ── TABELA DE TAREFAS ── */
-  .tasks-table { width: 100%; border-collapse: collapse; }
-  .tasks-table th {
-    font-size: 0.72rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    color: var(--texto-suave);
-    padding: 0.55rem 1rem;
-    background: rgba(240,234,248,0.5);
-    text-align: left;
-    border-bottom: 1px solid rgba(123,94,167,0.1);
-  }
-  .tasks-table td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(123,94,167,0.06);
-    vertical-align: middle;
-    font-size: 0.88rem;
-  }
-  .tasks-table tr:last-child td { border-bottom: none; }
-  .tasks-table tr:hover td { background: rgba(240,234,248,0.35); }
+/* ── TABELA ── */
+.table-wrap { overflow-x:auto; }
+.tasks-table { width:100%; border-collapse:collapse; }
+.tasks-table th {
+  font-size:0.68rem; font-weight:800; text-transform:uppercase; letter-spacing:0.6px;
+  color:var(--texto-suave); padding:0.5rem 1rem;
+  background:rgba(240,234,248,0.55); text-align:left;
+  border-bottom:1px solid rgba(123,94,167,0.1);
+}
+.tasks-table td { padding:0.7rem 1rem; border-bottom:1px solid rgba(123,94,167,0.06); vertical-align:middle; font-size:0.86rem; }
+.tasks-table tr:last-child td { border-bottom:none; }
+.tasks-table tr:hover td { background:rgba(240,234,248,0.3); }
+.task-nome { font-weight:700; color:var(--texto); }
+.task-desc { font-weight:400; font-size:0.78rem; color:var(--texto-suave); margin-top:2px; line-height:1.4; }
 
-  .task-name { font-weight: 700; color: var(--texto); display: flex; align-items: flex-start; gap: 8px; }
-  .task-name .task-desc { font-weight: 400; font-size: 0.8rem; color: var(--texto-suave); margin-top: 2px; }
+/* ── BADGES STATUS ── */
+.badge {
+  display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px;
+  font-family:'Nunito', sans-serif; font-size:0.7rem; font-weight:800; white-space:nowrap;
+  cursor:pointer; border:1.5px solid transparent; transition:opacity 0.15s;
+}
+.badge:hover { opacity:0.8; }
+.badge-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
 
-  /* ── BADGES DE STATUS ── */
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.73rem;
-    font-weight: 800;
-    white-space: nowrap;
-    cursor: pointer;
-    border: 1.5px solid transparent;
-    transition: all 0.15s;
-  }
-  .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.s-concluido-b  { background:var(--verde-bg);   color:#2E7D52;  border-color:rgba(76,175,125,0.25); }
+.s-concluido-b  .badge-dot { background:var(--verde); }
+.s-andamento-b  { background:var(--azul-bg);    color:#1A5F9E;  border-color:rgba(74,144,217,0.25); }
+.s-andamento-b  .badge-dot { background:var(--azul); }
+.s-afazer-b     { background:var(--amarelo-bg); color:#7A4F00;  border-color:rgba(232,160,0,0.25); }
+.s-afazer-b     .badge-dot { background:var(--amarelo); }
+.s-revisar-b    { background:var(--laranja-bg); color:#8B3A00;  border-color:rgba(224,120,48,0.25); }
+.s-revisar-b    .badge-dot { background:var(--laranja); }
+.s-emrevisao-b  { background:var(--revisao-bg); color:#5B1EA8;  border-color:rgba(139,63,200,0.25); }
+.s-emrevisao-b  .badge-dot { background:var(--revisao); }
+.s-pausado-b    { background:var(--cinza-bg);   color:#374151;  border-color:rgba(107,114,128,0.2); }
+.s-pausado-b    .badge-dot { background:var(--cinza); }
 
-  .badge-feito { background: var(--verde-bg); color: #2E7D52; border-color: rgba(76,175,125,0.25); }
-  .badge-feito .badge-dot { background: var(--verde); }
-  .badge-andamento { background: var(--azul-bg); color: #1A5F9E; border-color: rgba(74,144,217,0.25); }
-  .badge-andamento .badge-dot { background: var(--azul); }
-  .badge-pendente { background: var(--amarelo-bg); color: #A36200; border-color: rgba(240,165,0,0.25); }
-  .badge-pendente .badge-dot { background: var(--amarelo); }
-  .badge-planejado { background: var(--roxo-bg); color: var(--roxo-escuro); border-color: rgba(123,94,167,0.25); }
-  .badge-planejado .badge-dot { background: var(--roxo-claro); }
-  .badge-nova { background: #F3E8FF; color: #6B21A8; border-color: rgba(139,92,246,0.25); }
-  .badge-nova .badge-dot { background: #A855F7; }
-  .badge-pausado { background: var(--cinza-bg); color: #4B5563; border-color: rgba(107,114,128,0.2); }
-  .badge-pausado .badge-dot { background: var(--cinza); }
+/* ── AÇÕES DA LINHA ── */
+.task-actions { display:flex; gap:3px; opacity:0; transition:opacity 0.15s; }
+tr:hover .task-actions { opacity:1; }
 
-  /* Badge de categoria */
-  .cat-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    background: var(--bege);
-    color: var(--roxo-escuro);
-    border: 1px solid var(--bege-escuro);
-  }
+/* ── EMPTY / LOADING ── */
+.state-box { padding:2.5rem; text-align:center; color:var(--texto-suave); }
+.state-box p { font-size:0.85rem; }
+.spinner {
+  width:28px; height:28px; border:3px solid var(--roxo-bg); border-top-color:var(--roxo);
+  border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto 0.75rem;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
 
-  /* Prioridade */
-  .prio { font-size: 0.72rem; font-weight: 700; }
-  .prio-alta { color: var(--vermelho); }
-  .prio-media { color: var(--amarelo); }
-  .prio-baixa { color: var(--verde); }
+/* ── CARD WRAPPER ── */
+.card { background:white; border-radius:18px; box-shadow:var(--sombra); border:1px solid var(--borda); overflow:hidden; }
 
-  /* Ações */
-  .task-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
-  tr:hover .task-actions { opacity: 1; }
+/* ── MODAL ── */
+.modal-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(45,31,69,0.55); z-index:1000;
+  align-items:center; justify-content:center; padding:1rem;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:white; border-radius:20px; padding:1.8rem; width:100%; max-width:520px;
+  box-shadow:0 20px 60px rgba(45,31,69,0.3); position:relative; max-height:90vh; overflow-y:auto;
+}
+.modal h2 { font-family:'Nunito', sans-serif; font-weight:900; font-size:1.15rem; color:var(--roxo-deep); margin-bottom:1.3rem; display:flex; align-items:center; gap:8px; }
+.modal-close {
+  position:absolute; top:1.1rem; right:1.1rem; background:var(--cinza-bg);
+  border:none; border-radius:8px; width:30px; height:30px; cursor:pointer;
+  font-size:1rem; color:var(--cinza); display:flex; align-items:center; justify-content:center;
+}
+.modal-close:hover { background:var(--vermelho-bg); color:var(--vermelho); }
 
-  /* ── MODAL ── */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(45,31,69,0.55);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: white;
-    border-radius: 20px;
-    padding: 2rem;
-    width: 100%;
-    max-width: 540px;
-    box-shadow: 0 20px 60px rgba(45,31,69,0.3);
-    position: relative;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-  .modal h2 {
-    font-family: 'Nunito', sans-serif;
-    font-weight: 900;
-    font-size: 1.2rem;
-    color: var(--roxo-deep);
-    margin-bottom: 1.4rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .modal-close {
-    position: absolute;
-    top: 1.2rem; right: 1.2rem;
-    background: var(--cinza-bg);
-    border: none;
-    border-radius: 8px;
-    width: 32px; height: 32px;
-    cursor: pointer;
-    font-size: 1.1rem;
-    color: var(--cinza);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .modal-close:hover { background: var(--vermelho-bg); color: var(--vermelho); }
+.form-group { margin-bottom:1rem; }
+.form-label { display:block; font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:var(--texto-suave); margin-bottom:0.35rem; }
+.form-input {
+  width:100%; font-family:'Nunito Sans', sans-serif; font-size:0.88rem;
+  padding:0.55rem 0.85rem; border:1.5px solid rgba(123,94,167,0.2); border-radius:10px;
+  color:var(--texto); background:white; outline:none; transition:border-color 0.15s;
+}
+.form-input:focus { border-color:var(--roxo); box-shadow:0 0 0 3px rgba(123,94,167,0.1); }
+textarea.form-input { resize:vertical; min-height:65px; }
+.modal-footer { display:flex; gap:0.7rem; justify-content:flex-end; margin-top:1.3rem; border-top:1px solid rgba(123,94,167,0.1); padding-top:1.1rem; }
 
-  .form-group { margin-bottom: 1.1rem; }
-  .form-label {
-    display: block;
-    font-size: 0.78rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--texto-suave);
-    margin-bottom: 0.4rem;
-  }
-  .form-input {
-    width: 100%;
-    font-family: 'Nunito Sans', sans-serif;
-    font-size: 0.9rem;
-    padding: 0.6rem 0.9rem;
-    border: 1.5px solid rgba(123,94,167,0.2);
-    border-radius: 10px;
-    color: var(--texto);
-    background: white;
-    transition: border-color 0.15s;
-    outline: none;
-  }
-  .form-input:focus { border-color: var(--roxo); box-shadow: 0 0 0 3px rgba(123,94,167,0.12); }
-  .form-input[type="textarea"], textarea.form-input { resize: vertical; min-height: 70px; }
-  select.form-input { cursor: pointer; }
+/* ── CONFIG PANEL ── */
+.config-banner {
+  background:var(--roxo-bg); border:1.5px dashed var(--roxo-claro);
+  border-radius:14px; padding:1rem 1.2rem; margin-bottom:1.5rem;
+  font-size:0.83rem; color:var(--roxo-escuro);
+}
+.config-banner strong { font-family:'Nunito', sans-serif; font-weight:800; }
+.config-banner code {
+  background:rgba(123,94,167,0.12); padding:1px 7px; border-radius:5px;
+  font-family:monospace; font-size:0.82rem;
+}
+.config-input-row { display:flex; gap:0.6rem; align-items:center; margin-top:0.75rem; }
+.config-input-row input {
+  flex:1; font-family:monospace; font-size:0.82rem; padding:0.5rem 0.75rem;
+  border:1.5px solid var(--borda); border-radius:9px; outline:none;
+  background:white; color:var(--texto);
+}
+.config-input-row input:focus { border-color:var(--roxo); }
 
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  .modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.4rem; border-top: 1px solid rgba(123,94,167,0.1); padding-top: 1.2rem; }
-
-  /* ── EMPTY STATE ── */
-  .empty-state {
-    padding: 2.5rem;
-    text-align: center;
-    color: var(--texto-suave);
-  }
-  .empty-state p { font-size: 0.88rem; }
-
-  /* ── TOAST ── */
-  .toast {
-    position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    background: var(--roxo-deep);
-    color: white;
-    padding: 0.75rem 1.2rem;
-    border-radius: 12px;
-    font-family: 'Nunito', sans-serif;
-    font-weight: 700;
-    font-size: 0.88rem;
-    z-index: 2000;
-    box-shadow: 0 4px 20px rgba(45,31,69,0.35);
-    transform: translateY(80px);
-    opacity: 0;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .toast.show { transform: translateY(0); opacity: 1; }
-
-  /* ── PREGUIÇA MASCOTE ── */
-  .mascot {
-    font-size: 1.6rem;
-    animation: balanço 3s ease-in-out infinite;
-    display: inline-block;
-  }
-  @keyframes balanço {
-    0%,100% { transform: rotate(-5deg); }
-    50% { transform: rotate(5deg); }
-  }
-
-  /* ── SEARCH ── */
-  .search-wrap { position: relative; }
-  .search-wrap input {
-    padding-left: 2.2rem;
-    width: 220px;
-    font-family: 'Nunito Sans', sans-serif;
-    font-size: 0.85rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    border: 1.5px solid var(--borda);
-    border-radius: 10px;
-    background: white;
-    color: var(--texto);
-    outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
-  }
-  .search-wrap input:focus { border-color: var(--roxo); box-shadow: 0 0 0 3px rgba(123,94,167,0.12); }
-  .search-icon { position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--texto-suave); font-size: 0.85rem; pointer-events: none; }
-
-  /* Responsivo */
-  @media (max-width: 600px) {
-    .form-row { grid-template-columns: 1fr; }
-    .tasks-table th:nth-child(4), .tasks-table td:nth-child(4),
-    .tasks-table th:nth-child(5), .tasks-table td:nth-child(5) { display: none; }
-    .search-wrap input { width: 160px; }
-    .stat-number { font-size: 1.6rem; }
-  }
-
-  /* Linha de legenda de categoria */
-  .legend-bar {
-    display: flex; gap: 0.75rem; flex-wrap: wrap;
-    padding: 0.6rem 1.4rem;
-    background: rgba(240,234,248,0.4);
-    border-top: 1px solid rgba(123,94,167,0.06);
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--texto-suave);
-    align-items: center;
-  }
-  .legend-item { display: flex; align-items: center; gap: 5px; }
-  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+@media (max-width:600px) {
+  .tasks-table th:nth-child(3), .tasks-table td:nth-child(3),
+  .tasks-table th:nth-child(4), .tasks-table td:nth-child(4) { display:none; }
+  .search-wrap input { width:150px; }
+}
 </style>
 </head>
 <body>
 
+<!-- BANNER AMBIENTE -->
+<div class="env-banner dev" id="envBanner">
+  <span class="env-dot"></span>
+  <span id="envLabel">DESENVOLVIMENTO</span>
+</div>
+
 <div class="wrapper">
+
+  <!-- ALERTA ERROS -->
+  <div class="erro-alert" id="erroAlert">
+    <span class="erro-icon">⚠️</span>
+    <span id="erroMsg">Existem erros não resolvidos na automação</span>
+    <span style="margin-left:auto; font-size:0.75rem; opacity:0.7">Ver na planilha →</span>
+  </div>
+
+  <!-- CONFIG BANNER (some após salvar a URL) -->
+  <div class="config-banner" id="configBanner">
+    <strong>⚙️ Configuração inicial</strong> — Cole a URL do seu Google Apps Script Web App abaixo e clique em Salvar. Após isso o painel sincroniza automaticamente com o Google Sheets.
+    <div class="config-input-row">
+      <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/SEU_ID/exec">
+      <button class="btn btn-primary btn-sm" onclick="salvarApiUrl()">Salvar URL</button>
+    </div>
+  </div>
 
   <!-- HEADER -->
   <header class="header">
     <div class="header-left">
-      <div class="logo-icon">
-        <span style="font-size:28px;">🦥</span>
-      </div>
+      <div class="logo-icon"><span style="font-size:26px">🦥</span></div>
       <div class="header-title">
         <h1>Pod Ser + Fácil</h1>
         <p>Painel de Automação · Projeto Sarah</p>
       </div>
     </div>
     <div class="header-actions">
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" placeholder="Buscar tarefa…" oninput="renderAll()">
-      </div>
-      <button class="btn btn-primary" onclick="openModal()">
-        ＋ Nova Tarefa
-      </button>
+      <button class="btn btn-ghost btn-sm" onclick="recarregarTudo()" title="Sincronizar com Sheets">🔄 Sincronizar</button>
+      <button class="btn btn-primary" onclick="abrirModal()">＋ Nova Tarefa</button>
     </div>
   </header>
 
   <!-- STATS -->
-  <div class="stats-grid" id="statsGrid"></div>
-
-  <!-- FILTROS -->
-  <div class="filters-bar">
-    <span class="filter-label">Filtrar:</span>
-    <button class="filter-chip active" onclick="setFilter('todos', this)">Todos</button>
-    <button class="filter-chip" onclick="setFilter('feito', this)">✅ Concluído</button>
-    <button class="filter-chip" onclick="setFilter('andamento', this)">🔄 Em andamento</button>
-    <button class="filter-chip" onclick="setFilter('pendente', this)">⏳ Pendente</button>
-    <button class="filter-chip" onclick="setFilter('planejado', this)">📋 Planejado</button>
-    <button class="filter-chip" onclick="setFilter('nova', this)">🆕 Nova impl.</button>
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card s-total"><div class="stat-label">🗂️ Total</div><div class="stat-number" id="st-total">—</div></div>
+    <div class="stat-card s-concluido"><div class="stat-label">✅ Concluídas</div><div class="stat-number" id="st-concluido">—</div></div>
+    <div class="stat-card s-andamento"><div class="stat-label">🔄 Em andamento</div><div class="stat-number" id="st-andamento">—</div></div>
+    <div class="stat-card s-pendente"><div class="stat-label">⏳ A fazer</div><div class="stat-number" id="st-afazer">—</div></div>
+    <div class="stat-card s-revisao"><div class="stat-label">🔍 Em revisão</div><div class="stat-number" id="st-revisao">—</div></div>
   </div>
 
-  <!-- CONTEÚDO PRINCIPAL -->
-  <div id="mainContent"></div>
+  <!-- ABAS -->
+  <div class="tabs-nav">
+    <button class="tab-btn active" onclick="trocarAba('manutencoes', this)">
+      🔧 Manutenções <span class="tab-count" id="cnt-manutencoes">0</span>
+    </button>
+    <button class="tab-btn" onclick="trocarAba('otimizacoes', this)">
+      ⚡ Otimizações <span class="tab-count" id="cnt-otimizacoes">0</span>
+    </button>
+    <button class="tab-btn" onclick="trocarAba('implementacoes', this)">
+      🚀 Implementações <span class="tab-count" id="cnt-implementacoes">0</span>
+    </button>
+  </div>
 
-</div>
+  <!-- PAINÉIS -->
+  <div class="card" style="border-radius:0 18px 18px 18px;">
+
+    <!-- MANUTENÇÕES -->
+    <div class="tab-panel active" id="panel-manutencoes">
+      <div class="panel-header">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Buscar…" oninput="renderTabela('manutencoes')" id="busca-manutencoes">
+        </div>
+      </div>
+      <div class="table-wrap" id="tabela-manutencoes"><div class="state-box"><div class="spinner"></div><p>Carregando…</p></div></div>
+    </div>
+
+    <!-- OTIMIZAÇÕES -->
+    <div class="tab-panel" id="panel-otimizacoes">
+      <div class="panel-header">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Buscar…" oninput="renderTabela('otimizacoes')" id="busca-otimizacoes">
+        </div>
+      </div>
+      <div class="table-wrap" id="tabela-otimizacoes"><div class="state-box"><div class="spinner"></div><p>Carregando…</p></div></div>
+    </div>
+
+    <!-- IMPLEMENTAÇÕES -->
+    <div class="tab-panel" id="panel-implementacoes">
+      <div class="panel-header">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Buscar…" oninput="renderTabela('implementacoes')" id="busca-implementacoes">
+        </div>
+      </div>
+      <div class="table-wrap" id="tabela-implementacoes"><div class="state-box"><div class="spinner"></div><p>Carregando…</p></div></div>
+    </div>
+
+  </div><!-- /card -->
+
+  <p style="text-align:center;font-size:0.72rem;color:var(--texto-suave);margin-top:1.2rem;" id="ultimaSync">Última sincronização: —</p>
+
+</div><!-- /wrapper -->
 
 <!-- MODAL -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+<div class="modal-overlay" id="modalOverlay" onclick="fecharModalFora(event)">
   <div class="modal">
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <h2><span>🦥</span> <span id="modalTitle">Nova Tarefa</span></h2>
+    <button class="modal-close" onclick="fecharModal()">✕</button>
+    <h2><span>🦥</span><span id="modalTitulo">Nova Tarefa</span></h2>
 
-    <input type="hidden" id="editId">
+    <input type="hidden" id="fRowIndex">
+    <input type="hidden" id="fAba">
 
     <div class="form-group">
-      <label class="form-label">Nome da tarefa *</label>
-      <input class="form-input" type="text" id="fNome" placeholder="Ex: Melhoria no enquadramento automático">
+      <label class="form-label">Nome *</label>
+      <input class="form-input" type="text" id="fNome" placeholder="Ex: Ajuste no enquadramento automático">
     </div>
     <div class="form-group">
       <label class="form-label">Descrição</label>
-      <textarea class="form-input" id="fDesc" rows="2" placeholder="Detalhes, contexto, observações…"></textarea>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Categoria</label>
-        <select class="form-input" id="fCategoria">
-          <option value="Manutenção">🔧 Manutenção</option>
-          <option value="Otimização">⚡ Otimização</option>
-          <option value="Nova Impl.">🚀 Nova Implementação</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Status</label>
-        <select class="form-input" id="fStatus">
-          <option value="pendente">⏳ Pendente</option>
-          <option value="andamento">🔄 Em andamento</option>
-          <option value="feito">✅ Concluído</option>
-          <option value="planejado">📋 Planejado</option>
-          <option value="nova">🆕 Nova impl.</option>
-          <option value="pausado">⏸️ Pausado</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Prioridade</label>
-        <select class="form-input" id="fPrioridade">
-          <option value="alta">🔴 Alta</option>
-          <option value="media">🟡 Média</option>
-          <option value="baixa">🟢 Baixa</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Prazo estimado</label>
-        <input class="form-input" type="text" id="fPrazo" placeholder="Ex: Junho 2025">
-      </div>
+      <textarea class="form-input" id="fDesc" rows="3" placeholder="Contexto, objetivo, detalhes…"></textarea>
     </div>
     <div class="form-group">
-      <label class="form-label">Responsável</label>
-      <select class="form-input" id="fResponsavel">
-        <option value="Matheus">Matheus</option>
-        <option value="Sarah">Sarah</option>
-        <option value="Ambos">Ambos</option>
-        <option value="—">—</option>
+      <label class="form-label">Status</label>
+      <select class="form-input" id="fStatus">
+        <option value="A FAZER">⏳ A Fazer</option>
+        <option value="EM ANDAMENTO">🔄 Em Andamento</option>
+        <option value="A REVISAR">🔍 A Revisar</option>
+        <option value="EM REVISÃO">🔎 Em Revisão</option>
+        <option value="CONCLUÍDO">✅ Concluído</option>
+        <option value="PAUSADO">⏸️ Pausado</option>
       </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Observações adicionais</label>
-      <textarea class="form-input" id="fObs" rows="2" placeholder="Pontos a avaliar, dependências…"></textarea>
     </div>
 
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveTask()">💾 Salvar</button>
+      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarTarefa()">💾 Salvar na Planilha</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
-
 <script>
-const STORAGE_KEY = 'podsermaisf_tasks_v2';
+// ── CONFIG ─────────────────────────────────────────────────
+const API_KEY = 'psf_api_url';
+let API_URL = localStorage.getItem(API_KEY) || '';
 
-const STATUS_MAP = {
-  feito:     { label: 'Concluído',    cls: 'badge-feito',     emoji: '✅' },
-  andamento: { label: 'Em andamento', cls: 'badge-andamento', emoji: '🔄' },
-  pendente:  { label: 'Pendente',     cls: 'badge-pendente',  emoji: '⏳' },
-  planejado: { label: 'Planejado',    cls: 'badge-planejado', emoji: '📋' },
-  nova:      { label: 'Nova impl.',   cls: 'badge-nova',      emoji: '🆕' },
-  pausado:   { label: 'Pausado',      cls: 'badge-pausado',   emoji: '⏸️' },
+function salvarApiUrl() {
+  const val = document.getElementById('apiUrlInput').value.trim();
+  if (!val.startsWith('https://script.google.com')) {
+    alert('URL inválida. Cole a URL do Apps Script Web App.');
+    return;
+  }
+  API_URL = val;
+  localStorage.setItem(API_KEY, val);
+  document.getElementById('configBanner').style.display = 'none';
+  recarregarTudo();
+}
+
+function init() {
+  const url = localStorage.getItem(API_KEY);
+  if (url) {
+    API_URL = url;
+    document.getElementById('configBanner').style.display = 'none';
+    document.getElementById('apiUrlInput').value = url;
+  }
+  recarregarTudo();
+}
+
+// ── ESTADO ─────────────────────────────────────────────────
+const dados = { manutencoes: [], otimizacoes: [], implementacoes: [] };
+let abaAtiva = 'manutencoes';
+
+// ── STATUS HELPERS ─────────────────────────────────────────
+const STATUS_CFG = {
+  'CONCLUÍDO':    { cls:'s-concluido-b',  emoji:'✅' },
+  'EM ANDAMENTO': { cls:'s-andamento-b',  emoji:'🔄' },
+  'A FAZER':      { cls:'s-afazer-b',     emoji:'⏳' },
+  'A REVISAR':    { cls:'s-revisar-b',    emoji:'🔍' },
+  'EM REVISÃO':   { cls:'s-emrevisao-b',  emoji:'🔎' },
+  'PAUSADO':      { cls:'s-pausado-b',    emoji:'⏸️' },
 };
 
-const SECTIONS = [
-  { id: 'manutencao', icon: '🔧', bg: '#FEF3E2', label: 'Manutenção', categoria: 'Manutenção' },
-  { id: 'otimizacao', icon: '⚡', bg: '#EAF1FE', label: 'Otimizações', categoria: 'Otimização' },
-  { id: 'novas',      icon: '🚀', bg: '#F3E8FF', label: 'Novas Implementações', categoria: 'Nova Impl.' },
-];
-
-const PRIO_MAP = { alta: { cls: 'prio-alta', txt: '🔴 Alta' }, media: { cls: 'prio-media', txt: '🟡 Média' }, baixa: { cls: 'prio-baixa', txt: '🟢 Baixa' } };
-
-let tasks = [];
-let filterStatus = 'todos';
-
-function load() {
-  try { tasks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { tasks = []; }
-  if (tasks.length === 0) tasks = getDefaultTasks();
+function badgeHtml(status) {
+  const s = STATUS_CFG[status] || STATUS_CFG['A FAZER'];
+  const label = status || 'A FAZER';
+  return `<span class="badge ${s.cls}">${s.emoji} ${label}</span>`;
 }
 
-function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); }
-
-function getDefaultTasks() {
-  return [
-    { id: 1, nome: 'Captura de vídeos direto do YouTube', desc: 'Avaliar integração para buscar vídeos diretamente do YouTube, eliminando upload manual no Drive.', categoria: 'Otimização', status: 'pendente', prioridade: 'media', prazo: 'Ago 2025', responsavel: 'Matheus', obs: 'Verificar API do YouTube e custos de storage.' },
-    { id: 2, nome: 'Melhoria contínua na escolha dos cortes', desc: 'Usar episódios anteriores como base para melhorar semana a semana a seleção de trechos.', categoria: 'Otimização', status: 'andamento', prioridade: 'alta', prazo: 'Jul 2025', responsavel: 'Matheus', obs: 'Requer histórico de cortes antigos.' },
-    { id: 3, nome: 'Cortes em formato longo', desc: 'Permitir que a automação gere cortes mais longos quando o conteúdo justificar.', categoria: 'Otimização', status: 'planejado', prioridade: 'baixa', prazo: 'Set 2025', responsavel: 'Matheus', obs: '' },
-    { id: 4, nome: 'Selecionador e ranqueamento dos melhores cortes', desc: 'Adicionar etapa de ranqueamento para facilitar a escolha dos cortes com maior potencial.', categoria: 'Otimização', status: 'pendente', prioridade: 'media', prazo: 'Ago 2025', responsavel: 'Matheus', obs: '' },
-    { id: 5, nome: 'Adaptação para formato cinema', desc: 'Melhorar enquadramento, proporção e composição para acabamento mais premium.', categoria: 'Otimização', status: 'planejado', prioridade: 'baixa', prazo: 'Out 2025', responsavel: 'Ambos', obs: 'Avaliar filtros de cor e espaço anamórfico.' },
-    { id: 6, nome: 'Disparo no WhatsApp ao finalizar episódio', desc: 'Enviar mensagem automática quando cortes estiverem prontos para revisão/aprovação.', categoria: 'Nova Impl.', status: 'nova', prioridade: 'alta', prazo: 'A definir', responsavel: 'Matheus', obs: 'Avaliar Evolution API ou Z-API. Definir destinatários.' },
-    { id: 7, nome: 'Postagem automática nas redes sociais', desc: 'Publicar cortes no Instagram, TikTok e YouTube Shorts sem intervenção manual.', categoria: 'Nova Impl.', status: 'nova', prioridade: 'alta', prazo: 'A definir', responsavel: 'Ambos', obs: 'Limitações das APIs de cada plataforma precisam ser mapeadas.' },
-    { id: 8, nome: 'Geração automática de legendas para redes', desc: 'Criar legendas descritivas com tom de voz da Sarah, hashtags e CTA para cada corte.', categoria: 'Nova Impl.', status: 'nova', prioridade: 'media', prazo: 'A definir', responsavel: 'Matheus', obs: 'Gerar variações para testes A/B.' },
-    { id: 9, nome: 'Automação de cortes (pipeline principal)', desc: 'Pipeline completo: Google Drive → Whisper → IA → FFmpeg → Legendas → Vídeo final.', categoria: 'Manutenção', status: 'feito', prioridade: 'alta', prazo: 'Jun 2025', responsavel: 'Matheus', obs: 'Pipeline operacional com n8n + faster-whisper + FFmpeg.' },
-    { id: 10, nome: 'Queima de legendas (subtítulos nos cortes)', desc: 'Subtítulos em ASS/SRT gravados diretamente no vídeo com FFmpeg.', categoria: 'Manutenção', status: 'feito', prioridade: 'alta', prazo: 'Jun 2025', responsavel: 'Matheus', obs: 'Funcional. Formato e fonte padronizados.' },
-    { id: 11, nome: 'Imagem de CTA ao final dos cortes', desc: 'Sequência de imagem estática appended ao final de cada vídeo gerado.', categoria: 'Manutenção', status: 'feito', prioridade: 'media', prazo: 'Jun 2025', responsavel: 'Matheus', obs: 'Arquivo cta.png no servidor.' },
-    { id: 12, nome: 'Enquadramento vertical automático (9:16)', desc: 'Detecção de rosto e reposicionamento para formato TikTok/Reels.', categoria: 'Manutenção', status: 'andamento', prioridade: 'alta', prazo: 'Jul 2025', responsavel: 'Matheus', obs: 'Usando filter_complex com scale + crop inteligente.' },
-  ];
+// ── API CALLS ───────────────────────────────────────────────
+async function api(params) {
+  if (!API_URL) return null;
+  const url = API_URL + '?' + new URLSearchParams(params);
+  const res = await fetch(url);
+  return res.json();
 }
 
-function getFiltered() {
-  const q = document.getElementById('searchInput')?.value.toLowerCase() || '';
-  return tasks.filter(t => {
-    const matchFilter = filterStatus === 'todos' || t.status === filterStatus;
-    const matchSearch = !q || t.nome.toLowerCase().includes(q) || (t.desc || '').toLowerCase().includes(q);
-    return matchFilter && matchSearch;
+async function apiPost(body) {
+  if (!API_URL) return null;
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' }, // Apps Script exige isso para CORS
+    body: JSON.stringify(body),
   });
+  return res.json();
 }
 
-function renderStats() {
-  const total = tasks.length;
-  const feito = tasks.filter(t => t.status === 'feito').length;
-  const andamento = tasks.filter(t => t.status === 'andamento').length;
-  const pendente = tasks.filter(t => t.status === 'pendente' || t.status === 'planejado').length;
-  const nova = tasks.filter(t => t.status === 'nova').length;
+// ── CARREGAMENTO ────────────────────────────────────────────
+async function recarregarTudo() {
+  if (!API_URL) {
+    // Sem API: mostra dados offline vazios
+    ['manutencoes','otimizacoes','implementacoes'].forEach(a => {
+      dados[a] = [];
+      renderTabela(a);
+    });
+    atualizarStats();
+    return;
+  }
 
-  document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-card total">
-      <div class="stat-label">🗂️ Total</div>
-      <div class="stat-number">${total}</div>
-    </div>
-    <div class="stat-card feito">
-      <div class="stat-label">✅ Concluídas</div>
-      <div class="stat-number">${feito}</div>
-    </div>
-    <div class="stat-card andamento">
-      <div class="stat-label">🔄 Em andamento</div>
-      <div class="stat-number">${andamento}</div>
-    </div>
-    <div class="stat-card pendente">
-      <div class="stat-label">⏳ Pendentes</div>
-      <div class="stat-number">${pendente}</div>
-    </div>
-    <div class="stat-card nova">
-      <div class="stat-label">🚀 Novas impl.</div>
-      <div class="stat-number">${nova}</div>
-    </div>
-  `;
+  try {
+    const res = await api({ aba: 'all' });
+    if (!res) return;
+
+    // Status ambiente
+    if (res.status?.modo) {
+      const modo = res.status.modo;
+      const banner = document.getElementById('envBanner');
+      const label  = document.getElementById('envLabel');
+      if (modo === 'PRODUÇÃO' || modo === 'PRODUCAO') {
+        banner.className = 'env-banner prod';
+        label.textContent = '🟢 PRODUÇÃO';
+      } else {
+        banner.className = 'env-banner dev';
+        label.textContent = '🟡 DESENVOLVIMENTO';
+      }
+    }
+
+    // Alerta erros
+    if (res.erros?.temErro) {
+      const el = document.getElementById('erroAlert');
+      const total = res.erros.total;
+      document.getElementById('erroMsg').textContent =
+        `⚠️ ${total} erro${total > 1 ? 's' : ''} não ${total > 1 ? 'resolvidos' : 'resolvido'} na automação — verifique a planilha`;
+      el.classList.add('visible');
+    } else {
+      document.getElementById('erroAlert').classList.remove('visible');
+    }
+
+    // Tarefas
+    ['manutencoes','otimizacoes','implementacoes'].forEach(a => {
+      dados[a] = Array.isArray(res[a]) ? res[a] : [];
+      renderTabela(a);
+    });
+
+    atualizarStats();
+
+    const agora = new Date();
+    document.getElementById('ultimaSync').textContent =
+      'Última sincronização: ' + agora.toLocaleTimeString('pt-BR');
+
+  } catch(err) {
+    console.error('Erro ao carregar:', err);
+  }
 }
 
-function renderAll() {
-  renderStats();
-  const filtered = getFiltered();
-  const container = document.getElementById('mainContent');
-  container.innerHTML = '';
-
-  SECTIONS.forEach(sec => {
-    const items = filtered.filter(t => t.categoria === sec.categoria);
-    const allItems = tasks.filter(t => t.categoria === sec.categoria);
-
-    const section = document.createElement('div');
-    section.className = 'section';
-    section.id = 'sec-' + sec.id;
-
-    section.innerHTML = `
-      <div class="section-header" onclick="toggleSection('${sec.id}')">
-        <div class="section-header-left">
-          <div class="section-icon" style="background:${sec.bg}; font-size:18px;">${sec.icon}</div>
-          <span class="section-title">${sec.label}</span>
-          <span class="section-count">${allItems.length} tarefas</span>
-        </div>
-        <span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body">
-        ${items.length === 0 ? `<div class="empty-state"><p>Nenhuma tarefa encontrada para este filtro.</p></div>` : `
-        <table class="tasks-table">
-          <thead>
-            <tr>
-              <th style="width:40%">Tarefa</th>
-              <th style="width:16%">Status</th>
-              <th style="width:10%">Prioridade</th>
-              <th style="width:12%">Responsável</th>
-              <th style="width:12%">Prazo</th>
-              <th style="width:10%"></th>
-            </tr>
-          </thead>
-          <tbody>
-            ${items.map(t => renderRow(t)).join('')}
-          </tbody>
-        </table>`}
-        <div class="legend-bar">
-          ${Object.entries(STATUS_MAP).map(([k,v]) => `<span class="legend-item"><span class="badge-dot" style="background:${dotColor(k)}"></span>${v.emoji} ${v.label}</span>`).join('')}
-        </div>
-      </div>
-    `;
-    container.appendChild(section);
+// ── RENDER TABELA ───────────────────────────────────────────
+function renderTabela(aba) {
+  const busca = (document.getElementById('busca-' + aba)?.value || '').toLowerCase();
+  const lista = dados[aba].filter(t => {
+    if (!busca) return true;
+    const nome = String(t['manutenção'] || '').toLowerCase();
+    const desc = String(t['descrição'] || '').toLowerCase();
+    return nome.includes(busca) || desc.includes(busca);
   });
-}
 
-function dotColor(status) {
-  const m = { feito:'#4CAF7D', andamento:'#4A90D9', pendente:'#F0A500', planejado:'#A98DD4', nova:'#A855F7', pausado:'#6B7280' };
-  return m[status] || '#ccc';
-}
+  // Atualiza contador da aba
+  document.getElementById('cnt-' + aba).textContent = dados[aba].length;
 
-function renderRow(t) {
-  const s = STATUS_MAP[t.status] || STATUS_MAP.pendente;
-  const p = PRIO_MAP[t.prioridade] || PRIO_MAP.media;
-  return `
-    <tr>
+  const temDataEntrega = aba !== 'implementacoes';
+
+  if (lista.length === 0) {
+    document.getElementById('tabela-' + aba).innerHTML =
+      `<div class="state-box"><p>${busca ? 'Nenhum resultado para "' + busca + '"' : 'Nenhuma tarefa cadastrada.'}</p></div>`;
+    return;
+  }
+
+  const cols = temDataEntrega
+    ? ['Nome / Descrição','Status','Solicitado','Entrega','']
+    : ['Nome / Descrição','Status','Solicitado',''];
+
+  let html = `<table class="tasks-table"><thead><tr>`;
+  cols.forEach((c,i) => {
+    const w = i === 0 ? '45%' : i === cols.length-1 ? '8%' : '';
+    html += `<th style="${w ? 'width:'+w : ''}">${c}</th>`;
+  });
+  html += `</tr></thead><tbody>`;
+
+  lista.forEach(t => {
+    const nome     = esc(t['manutenção'] || '');
+    const desc     = esc(t['descrição'] || '');
+    const status   = String(t['status'] || 'A FAZER').toUpperCase().trim();
+    const solicit  = esc(t['data de solicitação'] || '—');
+    const entrega  = esc(t['data de entrega'] || '—');
+    const rowIdx   = t.rowIndex;
+
+    html += `<tr>
       <td>
-        <div class="task-name">
-          <div>
-            <div>${escHtml(t.nome)}</div>
-            ${t.desc ? `<div class="task-desc">${escHtml(t.desc.substring(0, 90))}${t.desc.length > 90 ? '…' : ''}</div>` : ''}
-          </div>
-        </div>
+        <div class="task-nome">${nome}</div>
+        ${desc ? `<div class="task-desc">${desc.substring(0,120)}${desc.length>120?'…':''}</div>` : ''}
       </td>
-      <td>
-        <span class="badge ${s.cls}" onclick="cycleStatus(${t.id})" title="Clique para alterar status">
-          <span class="badge-dot"></span>${s.label}
-        </span>
-      </td>
-      <td><span class="prio ${p.cls}" style="font-size:0.78rem;font-weight:700">${p.txt}</span></td>
-      <td style="font-size:0.82rem;color:var(--texto-suave);font-weight:600">${escHtml(t.responsavel || '—')}</td>
-      <td style="font-size:0.82rem;color:var(--texto-suave)">${escHtml(t.prazo || '—')}</td>
+      <td>${badgeHtml(status)}</td>
+      <td style="font-size:0.78rem;color:var(--texto-suave)">${solicit}</td>
+      ${temDataEntrega ? `<td style="font-size:0.78rem;color:var(--texto-suave)">${entrega}</td>` : ''}
       <td>
         <div class="task-actions">
-          <button class="btn btn-ghost btn-sm" onclick="editTask(${t.id})" title="Editar">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteTask(${t.id})" title="Excluir">🗑️</button>
+          <button class="btn btn-ghost btn-sm" onclick='editarTarefa(${JSON.stringify(aba)},${rowIdx})' title="Editar">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick='deletarTarefa(${JSON.stringify(aba)},${rowIdx})' title="Excluir">🗑️</button>
         </div>
       </td>
-    </tr>
-  `;
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  document.getElementById('tabela-' + aba).innerHTML = html;
 }
 
-function escHtml(str) {
-  if (!str) return '';
+// ── STATS ───────────────────────────────────────────────────
+function atualizarStats() {
+  const todas = [...dados.manutencoes, ...dados.otimizacoes, ...dados.implementacoes];
+  const conta = (status) => todas.filter(t => {
+    const s = String(t['status'] || '').toUpperCase().trim();
+    return Array.isArray(status) ? status.includes(s) : s === status;
+  }).length;
+
+  document.getElementById('st-total').textContent     = todas.length;
+  document.getElementById('st-concluido').textContent = conta('CONCLUÍDO');
+  document.getElementById('st-andamento').textContent = conta('EM ANDAMENTO');
+  document.getElementById('st-afazer').textContent    = conta('A FAZER');
+  document.getElementById('st-revisao').textContent   = conta(['A REVISAR','EM REVISÃO']);
+}
+
+// ── ABAS ────────────────────────────────────────────────────
+function trocarAba(aba, btn) {
+  abaAtiva = aba;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + aba).classList.add('active');
+}
+
+// ── MODAL ───────────────────────────────────────────────────
+let modoEdicao = false;
+
+function abrirModal(aba) {
+  modoEdicao = false;
+  const a = aba || abaAtiva;
+  document.getElementById('modalTitulo').textContent = 'Nova Tarefa';
+  document.getElementById('fRowIndex').value = '';
+  document.getElementById('fAba').value = a;
+  document.getElementById('fNome').value = '';
+  document.getElementById('fDesc').value = '';
+  document.getElementById('fStatus').value = 'A FAZER';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fNome').focus(), 80);
+}
+
+function editarTarefa(aba, rowIdx) {
+  const t = dados[aba].find(x => x.rowIndex === rowIdx);
+  if (!t) return;
+  modoEdicao = true;
+  document.getElementById('modalTitulo').textContent = 'Editar Tarefa';
+  document.getElementById('fRowIndex').value = rowIdx;
+  document.getElementById('fAba').value = aba;
+  document.getElementById('fNome').value = t['manutenção'] || '';
+  document.getElementById('fDesc').value = t['descrição'] || '';
+  document.getElementById('fStatus').value = String(t['status'] || 'A FAZER').toUpperCase().trim();
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fNome').focus(), 80);
+}
+
+function fecharModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function fecharModalFora(e) { if (e.target === document.getElementById('modalOverlay')) fecharModal(); }
+
+async function salvarTarefa() {
+  const nome = document.getElementById('fNome').value.trim();
+  if (!nome) { document.getElementById('fNome').focus(); return; }
+
+  const aba      = document.getElementById('fAba').value;
+  const rowIndex = parseInt(document.getElementById('fRowIndex').value) || null;
+  const dados_   = {
+    nome,
+    descricao: document.getElementById('fDesc').value.trim(),
+    status:    document.getElementById('fStatus').value,
+  };
+
+  fecharModal();
+
+  if (!API_URL) {
+    alert('Configure a URL da API primeiro.');
+    return;
+  }
+
+  const btn = document.querySelector('.btn-primary');
+
+  try {
+    let res;
+    if (modoEdicao && rowIndex) {
+      res = await apiPost({ action: 'update', aba, rowIndex, dados: dados_ });
+    } else {
+      res = await apiPost({ action: 'add', aba, dados: dados_ });
+    }
+
+    if (res?.ok) {
+      await recarregarTudo();
+    } else {
+      console.error('Erro ao salvar:', res);
+    }
+  } catch(err) {
+    console.error('Erro na requisição:', err);
+  }
+}
+
+async function deletarTarefa(aba, rowIndex) {
+  if (!confirm('Excluir esta tarefa da planilha?')) return;
+
+  try {
+    const res = await apiPost({ action: 'delete', aba, rowIndex });
+    if (res?.ok) {
+      await recarregarTudo();
+    }
+  } catch(err) {
+    console.error('Erro ao deletar:', err);
+  }
+}
+
+// ── UTILS ───────────────────────────────────────────────────
+function esc(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-const STATUS_CYCLE = ['pendente','andamento','feito','planejado','pausado','nova'];
+// ── INIT ────────────────────────────────────────────────────
+init();
 
-function cycleStatus(id) {
-  const t = tasks.find(x => x.id === id);
-  if (!t) return;
-  const i = STATUS_CYCLE.indexOf(t.status);
-  t.status = STATUS_CYCLE[(i + 1) % STATUS_CYCLE.length];
-  save();
-  renderAll();
-  showToast(`Status atualizado: ${STATUS_MAP[t.status].label}`);
-}
-
-function toggleSection(id) {
-  document.getElementById('sec-' + id)?.classList.toggle('collapsed');
-}
-
-function setFilter(status, btn) {
-  filterStatus = status;
-  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-  btn.classList.add('active');
-  renderAll();
-}
-
-/* ── MODAL ── */
-let editingId = null;
-
-function openModal() {
-  editingId = null;
-  document.getElementById('modalTitle').textContent = 'Nova Tarefa';
-  document.getElementById('editId').value = '';
-  document.getElementById('fNome').value = '';
-  document.getElementById('fDesc').value = '';
-  document.getElementById('fCategoria').value = 'Manutenção';
-  document.getElementById('fStatus').value = 'pendente';
-  document.getElementById('fPrioridade').value = 'media';
-  document.getElementById('fPrazo').value = '';
-  document.getElementById('fResponsavel').value = 'Matheus';
-  document.getElementById('fObs').value = '';
-  document.getElementById('modalOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('fNome').focus(), 100);
-}
-
-function editTask(id) {
-  const t = tasks.find(x => x.id === id);
-  if (!t) return;
-  editingId = id;
-  document.getElementById('modalTitle').textContent = 'Editar Tarefa';
-  document.getElementById('editId').value = id;
-  document.getElementById('fNome').value = t.nome;
-  document.getElementById('fDesc').value = t.desc || '';
-  document.getElementById('fCategoria').value = t.categoria;
-  document.getElementById('fStatus').value = t.status;
-  document.getElementById('fPrioridade').value = t.prioridade;
-  document.getElementById('fPrazo').value = t.prazo || '';
-  document.getElementById('fResponsavel').value = t.responsavel || 'Matheus';
-  document.getElementById('fObs').value = t.obs || '';
-  document.getElementById('modalOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('fNome').focus(), 100);
-}
-
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
-function closeModalOutside(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
-
-function saveTask() {
-  const nome = document.getElementById('fNome').value.trim();
-  if (!nome) { showToast('⚠️ Digite o nome da tarefa!'); return; }
-
-  const data = {
-    nome,
-    desc: document.getElementById('fDesc').value.trim(),
-    categoria: document.getElementById('fCategoria').value,
-    status: document.getElementById('fStatus').value,
-    prioridade: document.getElementById('fPrioridade').value,
-    prazo: document.getElementById('fPrazo').value.trim(),
-    responsavel: document.getElementById('fResponsavel').value,
-    obs: document.getElementById('fObs').value.trim(),
-  };
-
-  if (editingId) {
-    const t = tasks.find(x => x.id === editingId);
-    if (t) Object.assign(t, data);
-    showToast('✏️ Tarefa atualizada!');
-  } else {
-    data.id = Date.now();
-    tasks.push(data);
-    showToast('✅ Tarefa adicionada!');
-  }
-
-  save();
-  closeModal();
-  renderAll();
-}
-
-function deleteTask(id) {
-  if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
-  tasks = tasks.filter(x => x.id !== id);
-  save();
-  renderAll();
-  showToast('🗑️ Tarefa removida.');
-}
-
-/* ── TOAST ── */
-let toastTimer;
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
-}
-
-/* ── INIT ── */
-load();
-renderAll();
+// Auto-refresh a cada 60 segundos
+setInterval(() => { if (API_URL) recarregarTudo(); }, 60000);
 </script>
 </body>
 </html>
