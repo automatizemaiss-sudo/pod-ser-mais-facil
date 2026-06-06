@@ -306,13 +306,18 @@ function syncEnd(ok) {
 }
 
 // ── API GET (leitura) ────────────────────────────────────────
+// CORRIGIDO: aceita objeto de parâmetros ou string simples
 async function apiGet(params) {
-  const url = API_URL + '?' + new URLSearchParams(params);
+  const query = typeof params === 'string'
+    ? new URLSearchParams({ action: params })
+    : new URLSearchParams(params);
+  const url = API_URL + '?' + query.toString();
   const res = await fetch(url);
   return res.json();
 }
 
-// ── ENVIO DE ESCRITA via GET + base64 (mesmo padrão do projeto MRD) ────────
+// ── ENVIO DE ESCRITA via GET + base64 ────────────────────────
+// CORRIGIDO: usa unescape(encodeURIComponent()) para suportar acentos e UTF-8
 async function enviarEscrita(body) {
   const json   = JSON.stringify(body);
   const base64 = btoa(unescape(encodeURIComponent(json)));
@@ -322,6 +327,7 @@ async function enviarEscrita(body) {
 }
 
 // ── CARREGAR TUDO ────────────────────────────────────────────
+// CORRIGIDO: chama apiGet com objeto { aba: 'all' } em vez de string
 async function recarregarTudo() {
   syncStart();
   try {
@@ -476,6 +482,7 @@ function editarTarefa(aba, rowIdx) {
 function fecharModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 function fecharModalFora(e) { if(e.target===document.getElementById('modalOverlay')) fecharModal(); }
 
+// ── SALVAR TAREFA (add ou update) ────────────────────────────
 async function salvarTarefa() {
   const nome = document.getElementById('fNome').value.trim();
   if (!nome) { document.getElementById('fNome').focus(); return; }
@@ -491,21 +498,51 @@ async function salvarTarefa() {
   fecharModal();
   syncStart();
 
+  // CORRIGIDO: monta o body com action/aba/rowIndex/dados
+  // exatamente como o handleAction_ do script espera
   const body = modoEdicao && rowIndex
-    ? { action:'update', aba, rowIndex, dados: payload }
-    : { action:'add',    aba,           dados: payload };
+    ? { action: 'update', aba, rowIndex, dados: payload }
+    : { action: 'add',    aba,           dados: payload };
 
-  await enviarEscrita(body);
+  try {
+    const res = await enviarEscrita(body);
+    if (!res.ok) {
+      console.error('[PSF] Erro na escrita:', res);
+      syncEnd(false);
+      return;
+    }
+  } catch(err) {
+    console.error('[PSF] Erro ao salvar:', err);
+    syncEnd(false);
+    return;
+  }
+
   await recarregarTudo();
 }
 
+// ── DELETAR TAREFA ────────────────────────────────────────────
 async function deletarTarefa(aba, rowIndex) {
   if (!confirm('Excluir esta tarefa da planilha?')) return;
   syncStart();
-  await enviarEscrita({ action:'delete', aba, rowIndex });
+
+  try {
+    // CORRIGIDO: body com action/aba/rowIndex
+    const res = await enviarEscrita({ action: 'delete', aba, rowIndex });
+    if (!res.ok) {
+      console.error('[PSF] Erro ao deletar:', res);
+      syncEnd(false);
+      return;
+    }
+  } catch(err) {
+    console.error('[PSF] Erro ao deletar:', err);
+    syncEnd(false);
+    return;
+  }
+
   await recarregarTudo();
 }
 
+// ── ESCAPE HTML ───────────────────────────────────────────────
 function esc(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
