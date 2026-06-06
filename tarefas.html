@@ -496,50 +496,87 @@ async function salvarTarefa() {
   };
 
   fecharModal();
+
+  // ── 1. ATUALIZAÇÃO OTIMISTA — muda a UI na hora ──────────
+  if (modoEdicao && rowIndex) {
+    // Edição: acha o objeto no array local e atualiza
+    const idx = dados[aba].findIndex(t => t.rowIndex === rowIndex);
+    if (idx !== -1) {
+      dados[aba][idx]['manutenção'] = payload.nome;
+      dados[aba][idx]['descrição']  = payload.descricao;
+      dados[aba][idx]['status']     = payload.status;
+    }
+  } else {
+    // Adição: insere um objeto temporário no array local
+    dados[aba].push({
+      rowIndex:              -1, // temporário, será substituído pelo reload
+      'manutenção':          payload.nome,
+      'descrição':           payload.descricao,
+      'status':              payload.status,
+      'data de solicitação': new Date().toLocaleString('pt-BR'),
+      'data de entrega':     '—',
+    });
+  }
+
+  // Renderiza imediatamente com os dados locais
+  renderTabela(aba);
+  atualizarStats();
+
+  // ── 2. ENVIA PARA A PLANILHA EM BACKGROUND ───────────────
   syncStart();
 
-  // CORRIGIDO: monta o body com action/aba/rowIndex/dados
-  // exatamente como o handleAction_ do script espera
   const body = modoEdicao && rowIndex
     ? { action: 'update', aba, rowIndex, dados: payload }
     : { action: 'add',    aba,           dados: payload };
 
   try {
     const res = await enviarEscrita(body);
-    if (!res.ok) {
-      console.error('[PSF] Erro na escrita:', res);
-      syncEnd(false);
-      return;
-    }
+    if (!res.ok) throw new Error(res.erro || 'Erro desconhecido');
+    // Sucesso: reload silencioso para pegar o rowIndex real e datas do servidor
+    await recarregarTudo();
   } catch(err) {
     console.error('[PSF] Erro ao salvar:', err);
+    // ── 3. ROLLBACK — reverte se der erro ────────────────────
+    if (modoEdicao && rowIndex) {
+      // Reverte a edição buscando os dados originais da planilha
+      await recarregarTudo();
+    } else {
+      // Remove o item temporário que foi inserido
+      dados[aba] = dados[aba].filter(t => t.rowIndex !== -1);
+      renderTabela(aba);
+      atualizarStats();
+    }
+    alert('⚠️ Erro ao salvar na planilha. Verifique a conexão.');
     syncEnd(false);
-    return;
   }
-
-  await recarregarTudo();
 }
 
 // ── DELETAR TAREFA ────────────────────────────────────────────
 async function deletarTarefa(aba, rowIndex) {
   if (!confirm('Excluir esta tarefa da planilha?')) return;
+
+  // ── 1. REMOVE DA UI NA HORA ──────────────────────────────
+  const backup = [...dados[aba]]; // guarda cópia para rollback
+  dados[aba] = dados[aba].filter(t => t.rowIndex !== rowIndex);
+  renderTabela(aba);
+  atualizarStats();
+
+  // ── 2. ENVIA PARA A PLANILHA EM BACKGROUND ───────────────
   syncStart();
 
   try {
-    // CORRIGIDO: body com action/aba/rowIndex
     const res = await enviarEscrita({ action: 'delete', aba, rowIndex });
-    if (!res.ok) {
-      console.error('[PSF] Erro ao deletar:', res);
-      syncEnd(false);
-      return;
-    }
+    if (!res.ok) throw new Error(res.erro || 'Erro desconhecido');
+    await recarregarTudo();
   } catch(err) {
     console.error('[PSF] Erro ao deletar:', err);
+    // ── 3. ROLLBACK ───────────────────────────────────────────
+    dados[aba] = backup;
+    renderTabela(aba);
+    atualizarStats();
+    alert('⚠️ Erro ao excluir da planilha. Verifique a conexão.');
     syncEnd(false);
-    return;
   }
-
-  await recarregarTudo();
 }
 
 // ── ESCAPE HTML ───────────────────────────────────────────────
