@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projeto Sarah — Monitor de cortes</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f4f0e6;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --line: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --brand: #4a3aa7;
+    --brand-soft: #ece9f8;
+    --good: #0ca30c;
+    --warning: #fab219;
+    --serious: #ec835a;
+    --critical: #d03b3b;
+    --shadow: 0 1px 2px rgba(11,11,11,0.06);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --line: #383835;
+    --border: rgba(255,255,255,0.10);
+    --brand: #9085e9;
+    --brand-soft: #241f3d;
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 20px 64px; }
+
+  header.top { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; }
+  h1 { font-size: 20px; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .sub { color: var(--ink-2); font-size: 13px; margin: 0; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  button {
+    font: inherit; font-size: 13px; padding: 7px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--ink);
+    cursor: pointer; box-shadow: var(--shadow);
+  }
+  button:hover { border-color: var(--line); }
+  button[aria-pressed="true"] { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
+
+  .banner { display: none; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 14px; border: 1px solid; }
+  .banner.show { display: block; }
+  .banner.critical { border-color: var(--critical); background: color-mix(in srgb, var(--critical) 10%, var(--surface-1)); }
+  .banner.serious { border-color: var(--serious); background: color-mix(in srgb, var(--serious) 12%, var(--surface-1)); }
+  .banner b { font-weight: 600; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 22px; }
+  .kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .kpi .label { font-size: 12px; color: var(--ink-2); display: flex; align-items: center; gap: 6px; }
+  .kpi .value { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin-top: 2px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+
+  h2.section { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+
+  .job {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow);
+  }
+  .job.erro { border-left: 3px solid var(--critical); }
+  .job.travado { border-left: 3px solid var(--serious); }
+  .job-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; justify-content: space-between; }
+  .job-name { font-weight: 600; font-size: 15px; }
+  .job-meta { color: var(--ink-2); font-size: 12.5px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); color: var(--ink); background: var(--surface-1); }
+  .chip .ico { font-size: 11px; line-height: 1; }
+
+  .bar { position: relative; height: 8px; border-radius: 4px; background: var(--grid); margin: 12px 0 6px; overflow: hidden; }
+  .bar > span { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--brand); }
+  .job.erro .bar > span { background: var(--critical); }
+  .job.concluido .bar > span { background: var(--good); }
+  .bar-foot { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; font-size: 12.5px; color: var(--ink-2); }
+  .bar-foot .eta { font-variant-numeric: tabular-nums; }
+
+  .job-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .job-actions a, .job-actions button { font-size: 12.5px; padding: 5px 10px; }
+  .job-actions a { text-decoration: none; color: var(--brand); border: 1px solid var(--border); border-radius: 8px; background: var(--surface-1); }
+
+  .erro-msg { margin-top: 10px; font-size: 13px; color: var(--critical); display: flex; gap: 8px; align-items: flex-start; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--grid); }
+  th { color: var(--ink-2); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td.num { font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+
+  .hidden { display: none !important; }
+  .empty { color: var(--ink-2); background: var(--surface-1); border: 1px dashed var(--line); border-radius: 12px; padding: 28px; text-align: center; }
+
+  /* painel de detalhe */
+  .overlay { position: fixed; inset: 0; background: rgba(11,11,11,0.45); display: none; z-index: 10; }
+  .overlay.show { display: block; }
+  .panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100%);
+    background: var(--surface-1); border-left: 1px solid var(--border);
+    transform: translateX(100%); transition: transform .18s ease; z-index: 11;
+    display: flex; flex-direction: column;
+  }
+  .panel.show { transform: none; }
+  .panel-head { padding: 16px 18px; border-bottom: 1px solid var(--grid); display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .panel-body { overflow-y: auto; padding: 16px 18px 40px; }
+
+  ol.timeline { list-style: none; margin: 0 0 22px; padding: 0; }
+  ol.timeline li { display: flex; gap: 10px; align-items: flex-start; padding: 5px 0; font-size: 13.5px; }
+  ol.timeline .mark { width: 16px; text-align: center; color: var(--muted); flex: none; }
+  ol.timeline li.feito .mark { color: var(--good); }
+  ol.timeline li.atual { font-weight: 600; }
+  ol.timeline li.atual .mark { color: var(--brand); }
+  ol.timeline li.falhou .mark { color: var(--critical); }
+  ol.timeline li.pendente { color: var(--muted); }
+
+  .log { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .log-line { display: grid; grid-template-columns: 62px 1fr; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--grid); }
+  .log-line .ts { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .log-line.error .msg { color: var(--critical); }
+  .log-line.warn .msg { color: var(--ink); }
+  .log-line .nivel { color: var(--muted); }
+  .log-line .det { color: var(--ink-2); display: block; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Projeto Sarah — monitor de cortes</h1>
+      <p class="sub" id="sub">carregando…</p>
+    </div>
+    <div class="controls">
+      <button id="btn-refresh">Atualizar</button>
+      <button id="btn-auto" aria-pressed="true">Auto 15s</button>
+      <button id="btn-view" aria-pressed="false">Ver como tabela</button>
+      <button id="btn-theme">Tema</button>
+    </div>
+  </header>
+
+  <div class="banner critical" id="banner-erro"></div>
+  <div class="banner serious" id="banner-travado"></div>
+  <div class="banner critical" id="banner-api"></div>
+
+  <section class="kpis" id="kpis"></section>
+
+  <h2 class="section">Execuções</h2>
+  <div id="cards"></div>
+  <div id="tabela" class="hidden"></div>
+
+</div>
+
+<div class="overlay" id="overlay"></div>
+<aside class="panel" id="panel" aria-label="Detalhe da execução">
+  <div class="panel-head">
+    <div>
+      <div id="panel-title" style="font-weight:600"></div>
+      <div id="panel-sub" class="job-meta"></div>
+    </div>
+    <button id="btn-close">Fechar</button>
+  </div>
+  <div class="panel-body">
+    <h2 class="section">Etapas</h2>
+    <ol class="timeline" id="timeline"></ol>
+    <h2 class="section">Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+</aside>
+
+<script>
+// ── configuração ──────────────────────────────────────────
+var API = 'https://n8n.automatizemais.com/webhook/sarah';
+var INTERVALO_MS = 15000;
+
+var ETAPAS = [
+  ['recebido',    'Vídeo recebido'],
+  ['pastas',      'Montando pastas e assets'],
+  ['download',    'Baixando vídeo'],
+  ['audio',       'Extraindo áudio e proxy'],
+  ['transcricao', 'Transcrevendo (Whisper)'],
+  ['selecao',     'IA selecionando cortes'],
+  ['aprovacao',   'Aguardando aprovação da Sarah'],
+  ['corte',       'Cortando trechos'],
+  ['verticaliza', 'Verticalizando'],
+  ['legenda',     'Transcrevendo e queimando legenda'],
+  ['gancho_cta',  'Gancho, CTA e áudio'],
+  ['upload',      'Subindo pro Drive'],
+  ['concluido',   'Concluído']
+];
+
+var STATUS = {
+  rodando:    { rotulo: 'Rodando',    ico: '▶', cor: 'var(--brand)' },
+  aguardando: { rotulo: 'Aguardando', ico: '⏸', cor: 'var(--warning)' },
+  concluido:  { rotulo: 'Concluído',  ico: '✓', cor: 'var(--good)' },
+  erro:       { rotulo: 'Erro',       ico: '✕', cor: 'var(--critical)' },
+  travado:    { rotulo: 'Travado',    ico: '⚠', cor: 'var(--serious)' }
+};
+
+var estado = { jobs: [], resumo: null, auto: true, tabela: false, timer: null, jobAberto: null };
+
+// ── utilidades ────────────────────────────────────────────
+function esc(s) {
+  return String(s === undefined || s === null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+function dur(seg) {
+  seg = Math.max(0, Math.round(Number(seg) || 0));
+  if (seg < 60) { return seg + 's'; }
+  var m = Math.floor(seg / 60);
+  if (m < 60) { return m + ' min'; }
+  var h = Math.floor(m / 60);
+  var r = m % 60;
+  return h + 'h' + (r < 10 ? '0' : '') + r;
+}
+function hora(iso) {
+  if (!iso) { return '--:--'; }
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) { return '--:--'; }
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
+}
+function estadoVisual(j) {
+  if (j.status === 'rodando' && j.travado) { return 'travado'; }
+  return j.status || 'rodando';
+}
+function chip(k) {
+  var s = STATUS[k] || STATUS.rodando;
+  return '<span class="chip"><span class="ico" aria-hidden="true" style="color:' + s.cor + '">' + s.ico + '</span>' + s.rotulo + '</span>';
+}
+
+// ── render ────────────────────────────────────────────────
+function renderKpis(r) {
+  var itens = [
+    ['Rodando', r.rodando, 'var(--brand)'],
+    ['Aguardando aprovação', r.aguardando, 'var(--warning)'],
+    ['Concluídos', r.concluidos, 'var(--good)'],
+    ['Com erro', r.erros, 'var(--critical)'],
+    ['Travados', r.travados, 'var(--serious)']
+  ];
+  document.getElementById('kpis').innerHTML = itens.map(function (i) {
+    return '<div class="kpi"><div class="label"><span class="dot" style="background:' + i[2] + '"></span>' + i[0] + '</div>'
+      + '<div class="value">' + (i[1] || 0) + '</div></div>';
+  }).join('');
+}
+
+function renderBanners(r) {
+  var be = document.getElementById('banner-erro');
+  var bt = document.getElementById('banner-travado');
+  if (r.erros > 0) {
+    be.className = 'banner critical show';
+    be.innerHTML = '✕ <b>' + r.erros + '</b> execuç' + (r.erros === 1 ? 'ão parou' : 'ões pararam') + ' com erro. Abra o job para ver o log.';
+  } else { be.className = 'banner critical'; }
+  if (r.travados > 0) {
+    bt.className = 'banner serious show';
+    bt.innerHTML = '⚠ <b>' + r.travados + '</b> execuç' + (r.travados === 1 ? 'ão está' : 'ões estão') + ' sem dar sinal há mais de 30 min.';
+  } else { bt.className = 'banner serious'; }
+}
+
+function renderCards(jobs) {
+  var el = document.getElementById('cards');
+  if (!jobs.length) {
+    el.innerHTML = '<div class="empty">Nenhuma execução registrada ainda.</div>';
+    return;
+  }
+  el.innerHTML = jobs.map(function (j) {
+    var ev = estadoVisual(j);
+    var prog = Math.max(0, Math.min(100, Number(j.progresso) || 0));
+    var eta = (j.status === 'rodando')
+      ? 'faltam ~' + dur(j.eta_restante_seg)
+      : (j.status === 'aguardando' ? 'esperando resposta no WhatsApp' : '');
+    var pasta = j.drive_folder_url
+      ? '<a href="' + esc(j.drive_folder_url) + '" target="_blank" rel="noopener">Abrir pasta no Drive</a>' : '';
+    return '<article class="job ' + ev + '">'
+      + '<div class="job-head">'
+        + '<div><div class="job-name">' + esc(j.nome_video || j.job_id) + '</div>'
+        + '<div class="job-meta">' + esc(j.etapa_label || j.etapa_atual) + ' · etapa ' + (j.etapa_indice || 0) + ' de ' + (j.etapa_total || ETAPAS.length)
+        + (j.qtd_cortes ? ' · ' + j.qtd_cortes + ' cortes' : '') + '</div></div>'
+        + chip(ev)
+      + '</div>'
+      + '<div class="bar"><span style="width:' + prog + '%"></span></div>'
+      + '<div class="bar-foot"><span>' + prog + '% concluído</span>'
+      + '<span class="eta">' + esc(eta) + (eta ? ' · ' : '') + 'atualizado há ' + dur(j.parado_ha_seg) + '</span></div>'
+      + (j.status === 'erro' ? '<div class="erro-msg"><span aria-hidden="true">✕</span><span>' + esc(j.erro_msg) + '</span></div>' : '')
+      + '<div class="job-actions"><button data-job="' + esc(j.job_id) + '">Ver log</button>' + pasta + '</div>'
+      + '</article>';
+  }).join('');
+  Array.prototype.forEach.call(el.querySelectorAll('button[data-job]'), function (b) {
+    b.addEventListener('click', function () { abrirJob(b.getAttribute('data-job')); });
+  });
+}
+
+function renderTabela(jobs) {
+  var el = document.getElementById('tabela');
+  if (!jobs.length) { el.innerHTML = '<div class="empty">Nenhuma execução registrada ainda.</div>'; return; }
+  el.innerHTML = '<table><thead><tr><th>Vídeo</th><th>Status</th><th>Etapa</th><th>Progresso</th><th>Falta</th><th>Atualizado há</th></tr></thead><tbody>'
+    + jobs.map(function (j) {
+      var ev = estadoVisual(j);
+      return '<tr><td>' + esc(j.nome_video || j.job_id) + '</td>'
+        + '<td>' + chip(ev) + '</td>'
+        + '<td>' + esc(j.etapa_label || j.etapa_atual) + '</td>'
+        + '<td class="num">' + (j.progresso || 0) + '%</td>'
+        + '<td class="num">' + (j.status === 'rodando' ? dur(j.eta_restante_seg) : '—') + '</td>'
+        + '<td class="num">' + dur(j.parado_ha_seg) + '</td></tr>';
+    }).join('') + '</tbody></table>';
+}
+
+// ── detalhe ───────────────────────────────────────────────
+function renderTimeline(j) {
+  var atual = ETAPAS.findIndex(function (e) { return e[0] === j.etapa_atual; });
+  document.getElementById('timeline').innerHTML = ETAPAS.map(function (e, i) {
+    var cls, mark;
+    if (j.status === 'erro' && i === atual) { cls = 'falhou'; mark = '✕'; }
+    else if (i < atual || j.status === 'concluido') { cls = 'feito'; mark = '✓'; }
+    else if (i === atual) { cls = 'atual'; mark = '▶'; }
+    else { cls = 'pendente'; mark = '·'; }
+    return '<li class="' + cls + '"><span class="mark" aria-hidden="true">' + mark + '</span><span>' + e[1] + '</span></li>';
+  }).join('');
+}
+
+function abrirJob(jobId) {
+  var j = estado.jobs.filter(function (x) { return x.job_id === jobId; })[0];
+  if (!j) { return; }
+  estado.jobAberto = jobId;
+  document.getElementById('panel-title').textContent = j.nome_video || j.job_id;
+  document.getElementById('panel-sub').textContent = 'job ' + j.job_id + ' · iniciado às ' + hora(j.iniciado_em);
+  renderTimeline(j);
+  document.getElementById('log').innerHTML = '<div class="job-meta">carregando log…</div>';
+  document.getElementById('panel').classList.add('show');
+  document.getElementById('overlay').classList.add('show');
+  carregarLog(jobId);
+}
+
+function fecharJob() {
+  estado.jobAberto = null;
+  document.getElementById('panel').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+function carregarLog(jobId) {
+  fetch(API + '/logs?job_id=' + encodeURIComponent(jobId))
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (estado.jobAberto !== jobId) { return; }
+      var logs = (d && d.logs) || [];
+      if (!logs.length) {
+        document.getElementById('log').innerHTML = '<div class="job-meta">Sem linhas de log para este job.</div>';
+        return;
+      }
+      document.getElementById('log').innerHTML = logs.map(function (l) {
+        var ico = l.nivel === 'error' ? '<span style="color:var(--critical)" aria-hidden="true">\u2715</span> '
+          : (l.nivel === 'warn' ? '<span style="color:var(--serious)" aria-hidden="true">\u26a0</span> ' : '');
+        return '<div class="log-line ' + esc(l.nivel || 'info') + '">'
+          + '<span class="ts">' + hora(l.ts) + '</span>'
+          + '<span class="msg">' + ico + esc(l.mensagem)
+          + (l.detalhe ? '<span class="det">' + esc(l.detalhe) + '</span>' : '')
+          + '</span></div>';
+      }).join('');
+    })
+    .catch(function () {
+      document.getElementById('log').innerHTML = '<div class="job-meta">Não consegui carregar o log.</div>';
+    });
+}
+
+// ── carga ─────────────────────────────────────────────────
+function carregar() {
+  fetch(API + '/jobs', { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      document.getElementById('banner-api').className = 'banner critical';
+      estado.jobs = (d && d.jobs) || [];
+      estado.resumo = (d && d.resumo) || { total: 0, rodando: 0, aguardando: 0, concluidos: 0, erros: 0, travados: 0 };
+      renderKpis(estado.resumo);
+      renderBanners(estado.resumo);
+      renderCards(estado.jobs);
+      renderTabela(estado.jobs);
+      document.getElementById('sub').textContent =
+        estado.resumo.total + ' execuç' + (estado.resumo.total === 1 ? 'ão' : 'ões') + ' · atualizado às ' + hora(new Date().toISOString());
+      if (estado.jobAberto) {
+        var j = estado.jobs.filter(function (x) { return x.job_id === estado.jobAberto; })[0];
+        if (j) { renderTimeline(j); carregarLog(estado.jobAberto); }
+      }
+    })
+    .catch(function (e) {
+      var b = document.getElementById('banner-api');
+      b.className = 'banner critical show';
+      b.innerHTML = '✕ Não consegui falar com o n8n (' + esc(API) + '/jobs). Verifique se o workflow <b>sarah_dashboard_api</b> está ativo.';
+      document.getElementById('sub').textContent = 'sem conexão com o n8n';
+    });
+}
+
+function agendar() {
+  if (estado.timer) { clearInterval(estado.timer); estado.timer = null; }
+  if (estado.auto) { estado.timer = setInterval(carregar, INTERVALO_MS); }
+}
+
+// ── eventos ───────────────────────────────────────────────
+document.getElementById('btn-refresh').addEventListener('click', carregar);
+document.getElementById('btn-auto').addEventListener('click', function () {
+  estado.auto = !estado.auto;
+  this.setAttribute('aria-pressed', String(estado.auto));
+  this.textContent = estado.auto ? 'Auto 15s' : 'Auto desligado';
+  agendar();
+});
+document.getElementById('btn-view').addEventListener('click', function () {
+  estado.tabela = !estado.tabela;
+  this.setAttribute('aria-pressed', String(estado.tabela));
+  this.textContent = estado.tabela ? 'Ver como cards' : 'Ver como tabela';
+  document.getElementById('cards').classList.toggle('hidden', estado.tabela);
+  document.getElementById('tabela').classList.toggle('hidden', !estado.tabela);
+});
+document.getElementById('btn-theme').addEventListener('click', function () {
+  var atual = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme', atual === 'dark' ? 'light' : 'dark');
+});
+document.getElementById('btn-close').addEventListener('click', fecharJob);
+document.getElementById('overlay').addEventListener('click', fecharJob);
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fecharJob(); } });
+
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  document.documentElement.setAttribute('data-theme', 'dark');
+}
+
+carregar();
+agendar();
+</script>
+</body>
+</html>
