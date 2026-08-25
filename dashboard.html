@@ -150,7 +150,7 @@
     </div>
     <div class="controls">
       <button id="btn-refresh">Atualizar</button>
-      <button id="btn-auto" aria-pressed="true">Auto 15s</button>
+      <button id="btn-auto" aria-pressed="true">Auto 1min</button>
       <button id="btn-view" aria-pressed="false">Ver como tabela</button>
       <button id="btn-theme">Tema</button>
     </div>
@@ -189,7 +189,7 @@
 // ── configuração ──────────────────────────────────────────
 var API = 'https://n8n.automatizemais.com/webhook/sarah';
 var TOKEN = 'zXLwiGYji0y7f8bo';
-var INTERVALO_MS = 15000;
+var INTERVALO_MS = 60000;
 
 function garantirAcesso() {
   var atual = localStorage.getItem('sarah_token');
@@ -428,7 +428,7 @@ document.getElementById('btn-refresh').addEventListener('click', carregar);
 document.getElementById('btn-auto').addEventListener('click', function () {
   estado.auto = !estado.auto;
   this.setAttribute('aria-pressed', String(estado.auto));
-  this.textContent = estado.auto ? 'Auto 15s' : 'Auto desligado';
+  this.textContent = estado.auto ? 'Auto 1min' : 'Auto desligado';
   agendar();
 });
 document.getElementById('btn-view').addEventListener('click', function () {
