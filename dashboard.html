@@ -188,7 +188,19 @@
 <script>
 // ── configuração ──────────────────────────────────────────
 var API = 'https://n8n.automatizemais.com/webhook/sarah';
+var TOKEN = 'zXLwiGYji0y7f8bo';
 var INTERVALO_MS = 15000;
+
+function garantirAcesso() {
+  var atual = localStorage.getItem('sarah_token');
+  while (atual !== TOKEN) {
+    atual = window.prompt('Senha do dashboard:');
+    if (atual === TOKEN) { localStorage.setItem('sarah_token', atual); }
+  }
+}
+function headersAuth() {
+  return { 'X-Sarah-Token': localStorage.getItem('sarah_token') || TOKEN };
+}
 
 var ETAPAS = [
   ['recebido',    'Vídeo recebido'],
@@ -355,7 +367,7 @@ function fecharJob() {
 }
 
 function carregarLog(jobId) {
-  fetch(API + '/logs?job_id=' + encodeURIComponent(jobId))
+  fetch(API + '/logs?job_id=' + encodeURIComponent(jobId), { headers: headersAuth() })
     .then(function (r) { return r.json(); })
     .then(function (d) {
       if (estado.jobAberto !== jobId) { return; }
@@ -381,7 +393,7 @@ function carregarLog(jobId) {
 
 // ── carga ─────────────────────────────────────────────────
 function carregar() {
-  fetch(API + '/jobs', { cache: 'no-store' })
+  fetch(API + '/jobs', { cache: 'no-store', headers: headersAuth() })
     .then(function (r) { return r.json(); })
     .then(function (d) {
       document.getElementById('banner-api').className = 'banner critical';
@@ -438,6 +450,7 @@ if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').match
   document.documentElement.setAttribute('data-theme', 'dark');
 }
 
+garantirAcesso();
 carregar();
 agendar();
 </script>
