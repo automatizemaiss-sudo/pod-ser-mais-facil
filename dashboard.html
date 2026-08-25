@@ -65,6 +65,7 @@
   .banner.show { display: block; }
   .banner.critical { border-color: var(--critical); background: color-mix(in srgb, var(--critical) 10%, var(--surface-1)); }
   .banner.serious { border-color: var(--serious); background: color-mix(in srgb, var(--serious) 12%, var(--surface-1)); }
+  .banner.info { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, var(--surface-1)); }
   .banner b { font-weight: 600; }
 
   .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 22px; }
@@ -149,6 +150,8 @@
       <p class="sub" id="sub">carregando…</p>
     </div>
     <div class="controls">
+      <button id="btn-upload">Enviar vídeo</button>
+      <input type="file" id="input-upload" accept="video/*" class="hidden">
       <button id="btn-refresh">Atualizar</button>
       <button id="btn-auto" aria-pressed="true">Auto 1min</button>
       <button id="btn-view" aria-pressed="false">Ver como tabela</button>
@@ -159,6 +162,7 @@
   <div class="banner critical" id="banner-erro"></div>
   <div class="banner serious" id="banner-travado"></div>
   <div class="banner critical" id="banner-api"></div>
+  <div class="banner info" id="banner-upload"></div>
 
   <section class="kpis" id="kpis"></section>
 
@@ -300,6 +304,10 @@ function renderCards(jobs) {
       : (j.status === 'aguardando' ? 'esperando resposta no WhatsApp' : '');
     var pasta = j.drive_folder_url
       ? '<a href="' + esc(j.drive_folder_url) + '" target="_blank" rel="noopener">Abrir pasta no Drive</a>' : '';
+    var aprovacao = j.status === 'aguardando'
+      ? '<button data-aprovar="' + esc(j.job_id) + '" data-decisao="validado">Validar</button>'
+      + '<button data-aprovar="' + esc(j.job_id) + '" data-decisao="refazer">Refazer</button>'
+      : '';
     return '<article class="job ' + ev + '">'
       + '<div class="job-head">'
         + '<div><div class="job-name">' + esc(j.nome_video || j.job_id) + '</div>'
@@ -311,11 +319,14 @@ function renderCards(jobs) {
       + '<div class="bar-foot"><span>' + prog + '% concluído</span>'
       + '<span class="eta">' + esc(eta) + (eta ? ' · ' : '') + 'atualizado há ' + dur(j.parado_ha_seg) + '</span></div>'
       + (j.status === 'erro' ? '<div class="erro-msg"><span aria-hidden="true">✕</span><span>' + esc(j.erro_msg) + '</span></div>' : '')
-      + '<div class="job-actions"><button data-job="' + esc(j.job_id) + '">Ver log</button>' + pasta + '</div>'
+      + '<div class="job-actions">' + aprovacao + '<button data-job="' + esc(j.job_id) + '">Ver log</button>' + pasta + '</div>'
       + '</article>';
   }).join('');
   Array.prototype.forEach.call(el.querySelectorAll('button[data-job]'), function (b) {
     b.addEventListener('click', function () { abrirJob(b.getAttribute('data-job')); });
+  });
+  Array.prototype.forEach.call(el.querySelectorAll('button[data-aprovar]'), function (b) {
+    b.addEventListener('click', function () { aprovarJob(b.getAttribute('data-aprovar'), b.getAttribute('data-decisao'), b); });
   });
 }
 
@@ -358,6 +369,77 @@ function abrirJob(jobId) {
   document.getElementById('panel').classList.add('show');
   document.getElementById('overlay').classList.add('show');
   carregarLog(jobId);
+}
+
+function aprovarJob(jobId, decisao, botao) {
+  var grupo = botao.parentElement.querySelectorAll('button[data-aprovar]');
+  Array.prototype.forEach.call(grupo, function (b) { b.disabled = true; });
+  botao.textContent = decisao === 'validado' ? 'Validando…' : 'Refazendo…';
+  fetch(API + '/aprovar', {
+    method: 'POST',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, headersAuth()),
+    body: JSON.stringify({ job_id: jobId, decisao: decisao })
+  })
+    .then(function () { carregar(); })
+    .catch(function () {
+      Array.prototype.forEach.call(grupo, function (b) { b.disabled = false; });
+      botao.textContent = decisao === 'validado' ? 'Validar' : 'Refazer';
+    });
+}
+
+function enviarVideo(file) {
+  var banner = document.getElementById('banner-upload');
+  var btn = document.getElementById('btn-upload');
+  btn.disabled = true;
+  banner.className = 'banner info show';
+  banner.innerHTML = 'Preparando envio de <b>' + esc(file.name) + '</b>…';
+
+  fetch(API + '/upload-session', {
+    method: 'POST',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, headersAuth()),
+    body: JSON.stringify({ nome_arquivo: file.name, tamanho_bytes: file.size, mime_type: file.type || 'video/mp4' })
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d || !d.upload_url) { throw new Error('sem upload_url'); }
+      return new Promise(function (resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('PUT', d.upload_url);
+        xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+        xhr.upload.addEventListener('progress', function (ev) {
+          if (!ev.lengthComputable) { return; }
+          var pct = Math.round((ev.loaded / ev.total) * 100);
+          banner.innerHTML = 'Enviando <b>' + esc(file.name) + '</b> — ' + pct + '%';
+        });
+        xhr.onload = function () {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            reject(new Error('upload falhou (' + xhr.status + ')'));
+          }
+        };
+        xhr.onerror = function () { reject(new Error('upload falhou')); };
+        xhr.send(file);
+      });
+    })
+    .then(function (arquivo) {
+      return fetch(API + '/upload-done', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, headersAuth()),
+        body: JSON.stringify({ file_id: arquivo.id, nome_arquivo: file.name, solicitante: 'dashboard' })
+      });
+    })
+    .then(function () {
+      banner.innerHTML = '✓ <b>' + esc(file.name) + '</b> enviado. Vai aparecer na lista assim que o processamento começar.';
+      btn.disabled = false;
+      carregar();
+      setTimeout(function () { banner.className = 'banner info'; }, 6000);
+    })
+    .catch(function (e) {
+      banner.className = 'banner critical show';
+      banner.innerHTML = '✕ Não consegui enviar o vídeo (' + esc(e.message) + ').';
+      btn.disabled = false;
+    });
 }
 
 function fecharJob() {
@@ -424,6 +506,14 @@ function agendar() {
 }
 
 // ── eventos ───────────────────────────────────────────────
+document.getElementById('btn-upload').addEventListener('click', function () {
+  document.getElementById('input-upload').click();
+});
+document.getElementById('input-upload').addEventListener('change', function (e) {
+  var file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (file) { enviarVideo(file); }
+});
 document.getElementById('btn-refresh').addEventListener('click', carregar);
 document.getElementById('btn-auto').addEventListener('click', function () {
   estado.auto = !estado.auto;
