@@ -76,6 +76,20 @@
 
   h2.section { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
 
+  .tabs { display: flex; gap: 6px; margin-bottom: 18px; border-bottom: 1px solid var(--grid); }
+  .tab-btn {
+    font: inherit; font-size: 13.5px; padding: 9px 14px; border: none; border-bottom: 2px solid transparent;
+    background: transparent; color: var(--ink-2); cursor: pointer; box-shadow: none; border-radius: 0;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn[aria-pressed="true"] { color: var(--brand); border-bottom-color: var(--brand); font-weight: 600; }
+
+  .asset-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .asset-card { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+
+  .corte-item { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; justify-content: space-between; }
+  .corte-item .nome { font-weight: 600; }
+
   .job {
     background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
     padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow);
@@ -159,16 +173,47 @@
     </div>
   </header>
 
-  <div class="banner critical" id="banner-erro"></div>
-  <div class="banner serious" id="banner-travado"></div>
-  <div class="banner critical" id="banner-api"></div>
-  <div class="banner info" id="banner-upload"></div>
+  <nav class="tabs">
+    <button class="tab-btn" data-tab="execucoes" aria-pressed="true">Execuções</button>
+    <button class="tab-btn" data-tab="cortes" aria-pressed="false">Cortes prontos</button>
+    <button class="tab-btn" data-tab="imagens" aria-pressed="false">Imagens</button>
+  </nav>
 
-  <section class="kpis" id="kpis"></section>
+  <section id="view-execucoes">
+    <div class="banner critical" id="banner-erro"></div>
+    <div class="banner serious" id="banner-travado"></div>
+    <div class="banner critical" id="banner-api"></div>
+    <div class="banner info" id="banner-upload"></div>
 
-  <h2 class="section">Execuções</h2>
-  <div id="cards"></div>
-  <div id="tabela" class="hidden"></div>
+    <section class="kpis" id="kpis"></section>
+
+    <h2 class="section">Execuções</h2>
+    <div id="cards"></div>
+    <div id="tabela" class="hidden"></div>
+  </section>
+
+  <section id="view-cortes" class="hidden">
+    <h2 class="section">Cortes prontos</h2>
+    <div id="lista-cortes"></div>
+  </section>
+
+  <section id="view-imagens" class="hidden">
+    <h2 class="section">Imagens padrão (topo e rodapé)</h2>
+    <p class="sub" style="margin-bottom:14px">Vale pra todo vídeo novo processado a partir da troca. Vídeos já em andamento não mudam.</p>
+    <div class="asset-row">
+      <div class="job asset-card">
+        <div class="job-name">Topo</div>
+        <button id="btn-asset-topo">Trocar imagem de topo</button>
+        <input type="file" id="input-asset-topo" accept="image/*" class="hidden">
+      </div>
+      <div class="job asset-card">
+        <div class="job-name">Rodapé</div>
+        <button id="btn-asset-rodape">Trocar imagem de rodapé</button>
+        <input type="file" id="input-asset-rodape" accept="image/*" class="hidden">
+      </div>
+    </div>
+    <div class="banner info" id="banner-asset"></div>
+  </section>
 
 </div>
 
@@ -473,6 +518,71 @@ function carregarLog(jobId) {
     });
 }
 
+// ── abas ──────────────────────────────────────────────────
+function trocarAba(nome) {
+  ['execucoes', 'cortes', 'imagens'].forEach(function (n) {
+    document.getElementById('view-' + n).classList.toggle('hidden', n !== nome);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.tab-btn'), function (b) {
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-tab') === nome));
+  });
+  if (nome === 'cortes') { carregarCortes(); }
+}
+
+function carregarCortes() {
+  var el = document.getElementById('lista-cortes');
+  el.innerHTML = '<div class="job-meta">carregando…</div>';
+  fetch(API + '/cortes-prontos', { headers: headersAuth() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var cortes = (d && d.cortes) || [];
+      if (!cortes.length) {
+        el.innerHTML = '<div class="empty">Nenhum corte pronto ainda.</div>';
+        return;
+      }
+      el.innerHTML = cortes.map(function (c) {
+        return '<article class="job"><div class="corte-item">'
+          + '<div><div class="nome">' + esc(c.arquivo_nome) + '</div>'
+          + '<div class="job-meta">' + esc(c.nome_video || c.job_id) + '</div></div>'
+          + (c.link ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener">Abrir no Drive</a>' : '')
+          + '</div></article>';
+      }).join('');
+    })
+    .catch(function () {
+      el.innerHTML = '<div class="empty">Não consegui carregar os cortes prontos.</div>';
+    });
+}
+
+// ── imagens padrão ────────────────────────────────────────
+function trocarAsset(slot, file, botao) {
+  var banner = document.getElementById('banner-asset');
+  botao.disabled = true;
+  banner.className = 'banner info show';
+  banner.innerHTML = 'Enviando nova imagem de ' + esc(slot) + '…';
+
+  var form = new FormData();
+  form.append('data', file);
+
+  fetch(API + '/asset?slot=' + encodeURIComponent(slot), {
+    method: 'POST',
+    headers: headersAuth(),
+    body: form
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d || !d.ok) { throw new Error('falha ao salvar'); }
+      banner.className = 'banner info show';
+      banner.innerHTML = '✓ Imagem de ' + esc(slot) + ' atualizada. Vale a partir do próximo vídeo processado.';
+      botao.disabled = false;
+      setTimeout(function () { banner.className = 'banner info'; }, 6000);
+    })
+    .catch(function () {
+      banner.className = 'banner critical show';
+      banner.innerHTML = '✕ Não consegui trocar a imagem de ' + esc(slot) + '.';
+      botao.disabled = false;
+    });
+}
+
 // ── carga ─────────────────────────────────────────────────
 function carregar() {
   fetch(API + '/jobs', { cache: 'no-store', headers: headersAuth() })
@@ -506,6 +616,27 @@ function agendar() {
 }
 
 // ── eventos ───────────────────────────────────────────────
+Array.prototype.forEach.call(document.querySelectorAll('.tab-btn'), function (b) {
+  b.addEventListener('click', function () { trocarAba(b.getAttribute('data-tab')); });
+});
+document.getElementById('btn-asset-topo').addEventListener('click', function () {
+  document.getElementById('input-asset-topo').click();
+});
+document.getElementById('input-asset-topo').addEventListener('change', function (e) {
+  var file = e.target.files && e.target.files[0];
+  var btn = document.getElementById('btn-asset-topo');
+  e.target.value = '';
+  if (file) { trocarAsset('topo', file, btn); }
+});
+document.getElementById('btn-asset-rodape').addEventListener('click', function () {
+  document.getElementById('input-asset-rodape').click();
+});
+document.getElementById('input-asset-rodape').addEventListener('change', function (e) {
+  var file = e.target.files && e.target.files[0];
+  var btn = document.getElementById('btn-asset-rodape');
+  e.target.value = '';
+  if (file) { trocarAsset('rodape', file, btn); }
+});
 document.getElementById('btn-upload').addEventListener('click', function () {
   document.getElementById('input-upload').click();
 });
