@@ -87,8 +87,9 @@
   .asset-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
   .asset-card { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 
-  .corte-item { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; justify-content: space-between; }
+  .corte-item { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .corte-item .nome { font-weight: 600; }
+  .corte-thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; flex: none; background: var(--grid); }
 
   .job {
     background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
@@ -541,8 +542,12 @@ function carregarCortes() {
         return;
       }
       el.innerHTML = cortes.map(function (c) {
+        var thumb = c.thumbnail
+          ? '<img src="' + esc(c.thumbnail) + '" alt="" class="corte-thumb" onerror="this.remove()">'
+          : '';
         return '<article class="job"><div class="corte-item">'
-          + '<div><div class="nome">' + esc(c.arquivo_nome) + '</div>'
+          + thumb
+          + '<div style="flex:1"><div class="nome">' + esc(c.arquivo_nome) + '</div>'
           + '<div class="job-meta">' + esc(c.nome_video || c.job_id) + '</div></div>'
           + (c.link ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener">Abrir no Drive</a>' : '')
           + '</div></article>';
