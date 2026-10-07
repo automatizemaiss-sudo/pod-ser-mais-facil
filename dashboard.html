@@ -59,7 +59,10 @@
     cursor: pointer; box-shadow: var(--shadow);
   }
   button:hover { border-color: var(--line); }
+  button:disabled { opacity: .55; cursor: default; }
   button[aria-pressed="true"] { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
+  button.perigo { color: var(--critical); }
+  button.perigo:hover { border-color: var(--critical); }
 
   .banner { display: none; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 14px; border: 1px solid; }
   .banner.show { display: block; }
@@ -75,6 +78,8 @@
   .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
 
   h2.section { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  .section-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .section-head h2.section { margin: 0; }
 
   .tabs { display: flex; gap: 6px; margin-bottom: 18px; border-bottom: 1px solid var(--grid); }
   .tab-btn {
@@ -86,6 +91,7 @@
 
   .asset-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
   .asset-card { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .asset-card .job-meta { margin-top: -4px; }
 
   .corte-item { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .corte-item .nome { font-weight: 600; }
@@ -185,10 +191,14 @@
     <div class="banner serious" id="banner-travado"></div>
     <div class="banner critical" id="banner-api"></div>
     <div class="banner info" id="banner-upload"></div>
+    <div class="banner info" id="banner-excluir"></div>
 
     <section class="kpis" id="kpis"></section>
 
-    <h2 class="section">Execuções</h2>
+    <div class="section-head">
+      <h2 class="section">Execuções</h2>
+      <button id="btn-limpar" class="perigo hidden">Limpar encerrados</button>
+    </div>
     <div id="cards"></div>
     <div id="tabela" class="hidden"></div>
   </section>
@@ -199,7 +209,7 @@
   </section>
 
   <section id="view-imagens" class="hidden">
-    <h2 class="section">Imagens padrão (topo e rodapé)</h2>
+    <h2 class="section">Imagens padrão (topo, rodapé e CTA)</h2>
     <p class="sub" style="margin-bottom:14px">Vale pra todo vídeo novo processado a partir da troca. Vídeos já em andamento não mudam.</p>
     <div class="asset-row">
       <div class="job asset-card">
@@ -211,6 +221,12 @@
         <div class="job-name">Rodapé</div>
         <button id="btn-asset-rodape">Trocar imagem de rodapé</button>
         <input type="file" id="input-asset-rodape" accept="image/*" class="hidden">
+      </div>
+      <div class="job asset-card">
+        <div class="job-name">CTA (final do vídeo)</div>
+        <div class="job-meta">Imagem de 3 segundos exibida no fim de cada corte. Formato vertical 1080×1920.</div>
+        <button id="btn-asset-cta">Trocar imagem de CTA</button>
+        <input type="file" id="input-asset-cta" accept="image/*" class="hidden">
       </div>
     </div>
     <div class="banner info" id="banner-asset"></div>
@@ -276,7 +292,13 @@ var STATUS = {
   travado:    { rotulo: 'Travado',    ico: '⚠', cor: 'var(--serious)' }
 };
 
-var estado = { jobs: [], resumo: null, auto: true, tabela: false, timer: null, jobAberto: null };
+var ASSETS = {
+  topo:   { rotulo: 'topo' },
+  rodape: { rotulo: 'rodapé' },
+  cta:    { rotulo: 'CTA' }
+};
+
+var estado = { jobs: [], resumo: null, auto: true, tabela: false, timer: null, jobAberto: null, aba: 'execucoes' };
 
 // ── utilidades ────────────────────────────────────────────
 function esc(s) {
@@ -307,6 +329,11 @@ function chip(k) {
   var s = STATUS[k] || STATUS.rodando;
   return '<span class="chip"><span class="ico" aria-hidden="true" style="color:' + s.cor + '">' + s.ico + '</span>' + s.rotulo + '</span>';
 }
+// job "encerrado" = pode ser limpo sem atrapalhar nada em andamento
+function encerrado(j) {
+  var ev = estadoVisual(j);
+  return ev === 'concluido' || ev === 'erro' || ev === 'travado' || !j.status;
+}
 
 // ── render ────────────────────────────────────────────────
 function renderKpis(r) {
@@ -334,6 +361,13 @@ function renderBanners(r) {
     bt.className = 'banner serious show';
     bt.innerHTML = '⚠ <b>' + r.travados + '</b> execuç' + (r.travados === 1 ? 'ão está' : 'ões estão') + ' sem dar sinal há mais de 30 min.';
   } else { bt.className = 'banner serious'; }
+}
+
+function renderBotaoLimpar(jobs) {
+  var n = jobs.filter(encerrado).length;
+  var b = document.getElementById('btn-limpar');
+  b.classList.toggle('hidden', n === 0);
+  b.textContent = 'Limpar encerrados (' + n + ')';
 }
 
 function renderCards(jobs) {
@@ -365,7 +399,8 @@ function renderCards(jobs) {
       + '<div class="bar-foot"><span>' + prog + '% concluído</span>'
       + '<span class="eta">' + esc(eta) + (eta ? ' · ' : '') + 'atualizado há ' + dur(j.parado_ha_seg) + '</span></div>'
       + (j.status === 'erro' ? '<div class="erro-msg"><span aria-hidden="true">✕</span><span>' + esc(j.erro_msg) + '</span></div>' : '')
-      + '<div class="job-actions">' + aprovacao + '<button data-job="' + esc(j.job_id) + '">Ver log</button>' + pasta + '</div>'
+      + '<div class="job-actions">' + aprovacao + '<button data-job="' + esc(j.job_id) + '">Ver log</button>' + pasta
+      + '<button class="perigo" data-excluir="' + esc(j.job_id) + '">Excluir</button></div>'
       + '</article>';
   }).join('');
   Array.prototype.forEach.call(el.querySelectorAll('button[data-job]'), function (b) {
@@ -373,6 +408,9 @@ function renderCards(jobs) {
   });
   Array.prototype.forEach.call(el.querySelectorAll('button[data-aprovar]'), function (b) {
     b.addEventListener('click', function () { aprovarJob(b.getAttribute('data-aprovar'), b.getAttribute('data-decisao'), b); });
+  });
+  Array.prototype.forEach.call(el.querySelectorAll('button[data-excluir]'), function (b) {
+    b.addEventListener('click', function () { excluirUm(b.getAttribute('data-excluir'), b); });
   });
 }
 
@@ -431,6 +469,50 @@ function aprovarJob(jobId, decisao, botao) {
       Array.prototype.forEach.call(grupo, function (b) { b.disabled = false; });
       botao.textContent = decisao === 'validado' ? 'Validar' : 'Refazer';
     });
+}
+
+// ── excluir / limpar jobs ─────────────────────────────────
+function mostrarAvisoExcluir(classe, html, ms) {
+  var b = document.getElementById('banner-excluir');
+  b.className = 'banner ' + classe + ' show';
+  b.innerHTML = html;
+  if (ms) { setTimeout(function () { b.className = 'banner info'; }, ms); }
+}
+
+function excluirJobs(ids, botoes) {
+  (botoes || []).forEach(function (b) { b.disabled = true; });
+  return fetch(API + '/excluir-job', {
+    method: 'POST',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, headersAuth()),
+    body: JSON.stringify({ job_ids: ids })
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d || !d.ok) { throw new Error('a API recusou o pedido'); }
+      if (estado.jobAberto && ids.indexOf(estado.jobAberto) >= 0) { fecharJob(); }
+      mostrarAvisoExcluir('info', '✓ ' + d.excluidos + ' execuç' + (d.excluidos === 1 ? 'ão excluída' : 'ões excluídas') + '.', 5000);
+      carregar();
+    })
+    .catch(function (e) {
+      (botoes || []).forEach(function (b) { b.disabled = false; });
+      mostrarAvisoExcluir('critical', '✕ Não consegui excluir (' + esc(e.message) + ').', 0);
+    });
+}
+
+function excluirUm(jobId, botao) {
+  var j = estado.jobs.filter(function (x) { return x.job_id === jobId; })[0] || {};
+  var aviso = (j.status === 'rodando' && !j.travado)
+    ? '\n\nATENÇÃO: este vídeo ainda está rodando. Excluir aqui só apaga o registro do painel; o processamento no n8n continua.'
+    : '';
+  if (!window.confirm('Excluir "' + (j.nome_video || jobId) + '" e o log dele?' + aviso)) { return; }
+  excluirJobs([jobId], [botao]);
+}
+
+function limparEncerrados() {
+  var ids = estado.jobs.filter(encerrado).map(function (j) { return j.job_id; });
+  if (!ids.length) { return; }
+  if (!window.confirm('Excluir ' + ids.length + ' execuç' + (ids.length === 1 ? 'ão encerrada' : 'ões encerradas') + ' (concluídas, com erro, travadas ou vazias) e os logs delas?\n\nExecuções rodando ou aguardando aprovação não são afetadas.')) { return; }
+  excluirJobs(ids, [document.getElementById('btn-limpar')]);
 }
 
 function enviarVideo(file) {
@@ -505,8 +587,8 @@ function carregarLog(jobId) {
         return;
       }
       document.getElementById('log').innerHTML = logs.map(function (l) {
-        var ico = l.nivel === 'error' ? '<span style="color:var(--critical)" aria-hidden="true">\u2715</span> '
-          : (l.nivel === 'warn' ? '<span style="color:var(--serious)" aria-hidden="true">\u26a0</span> ' : '');
+        var ico = l.nivel === 'error' ? '<span style="color:var(--critical)" aria-hidden="true">✕</span> '
+          : (l.nivel === 'warn' ? '<span style="color:var(--serious)" aria-hidden="true">⚠</span> ' : '');
         return '<div class="log-line ' + esc(l.nivel || 'info') + '">'
           + '<span class="ts">' + hora(l.ts) + '</span>'
           + '<span class="msg">' + ico + esc(l.mensagem)
@@ -521,22 +603,26 @@ function carregarLog(jobId) {
 
 // ── abas ──────────────────────────────────────────────────
 function trocarAba(nome) {
+  estado.aba = nome;
   ['execucoes', 'cortes', 'imagens'].forEach(function (n) {
     document.getElementById('view-' + n).classList.toggle('hidden', n !== nome);
   });
   Array.prototype.forEach.call(document.querySelectorAll('.tab-btn'), function (b) {
     b.setAttribute('aria-pressed', String(b.getAttribute('data-tab') === nome));
   });
-  if (nome === 'cortes') { carregarCortes(); }
+  if (nome === 'cortes') { carregarCortes(false); }
 }
 
-function carregarCortes() {
+// a API também devolve as pastas "Cortes ..."; aqui ficam só os arquivos de vídeo
+var EXT_VIDEO = /\.(mp4|mov|m4v|mkv|webm|avi)$/i;
+
+function carregarCortes(silencioso) {
   var el = document.getElementById('lista-cortes');
-  el.innerHTML = '<div class="job-meta">carregando…</div>';
-  fetch(API + '/cortes-prontos', { headers: headersAuth() })
+  if (!silencioso) { el.innerHTML = '<div class="job-meta">carregando…</div>'; }
+  fetch(API + '/cortes-prontos', { cache: 'no-store', headers: headersAuth() })
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      var cortes = (d && d.cortes) || [];
+      var cortes = ((d && d.cortes) || []).filter(function (c) { return EXT_VIDEO.test(String(c.arquivo_nome || '')); });
       if (!cortes.length) {
         el.innerHTML = '<div class="empty">Nenhum corte pronto ainda.</div>';
         return;
@@ -548,22 +634,23 @@ function carregarCortes() {
         return '<article class="job"><div class="corte-item">'
           + thumb
           + '<div style="flex:1"><div class="nome">' + esc(c.arquivo_nome) + '</div>'
-          + '<div class="job-meta">' + esc(c.nome_video || c.job_id) + '</div></div>'
+          + '<div class="job-meta">' + esc(c.nome_video || c.job_id) + (c.criado_em ? ' · ' + esc(new Date(c.criado_em).toLocaleString('pt-BR')) : '') + '</div></div>'
           + (c.link ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener">Abrir no Drive</a>' : '')
           + '</div></article>';
       }).join('');
     })
     .catch(function () {
-      el.innerHTML = '<div class="empty">Não consegui carregar os cortes prontos.</div>';
+      if (!silencioso) { el.innerHTML = '<div class="empty">Não consegui carregar os cortes prontos.</div>'; }
     });
 }
 
 // ── imagens padrão ────────────────────────────────────────
 function trocarAsset(slot, file, botao) {
   var banner = document.getElementById('banner-asset');
+  var nome = (ASSETS[slot] && ASSETS[slot].rotulo) || slot;
   botao.disabled = true;
   banner.className = 'banner info show';
-  banner.innerHTML = 'Enviando nova imagem de ' + esc(slot) + '…';
+  banner.innerHTML = 'Enviando nova imagem de ' + esc(nome) + '…';
 
   var form = new FormData();
   form.append('data', file);
@@ -577,19 +664,20 @@ function trocarAsset(slot, file, botao) {
     .then(function (d) {
       if (!d || !d.ok) { throw new Error('falha ao salvar'); }
       banner.className = 'banner info show';
-      banner.innerHTML = '✓ Imagem de ' + esc(slot) + ' atualizada. Vale a partir do próximo vídeo processado.';
+      banner.innerHTML = '✓ Imagem de ' + esc(nome) + ' atualizada. Vale a partir do próximo vídeo processado.';
       botao.disabled = false;
       setTimeout(function () { banner.className = 'banner info'; }, 6000);
     })
     .catch(function () {
       banner.className = 'banner critical show';
-      banner.innerHTML = '✕ Não consegui trocar a imagem de ' + esc(slot) + '.';
+      banner.innerHTML = '✕ Não consegui trocar a imagem de ' + esc(nome) + '.';
       botao.disabled = false;
     });
 }
 
 // ── carga ─────────────────────────────────────────────────
 function carregar() {
+  if (estado.aba === 'cortes') { carregarCortes(true); }
   fetch(API + '/jobs', { cache: 'no-store', headers: headersAuth() })
     .then(function (r) { return r.json(); })
     .then(function (d) {
@@ -598,6 +686,7 @@ function carregar() {
       estado.resumo = (d && d.resumo) || { total: 0, rodando: 0, aguardando: 0, concluidos: 0, erros: 0, travados: 0 };
       renderKpis(estado.resumo);
       renderBanners(estado.resumo);
+      renderBotaoLimpar(estado.jobs);
       renderCards(estado.jobs);
       renderTabela(estado.jobs);
       document.getElementById('sub').textContent =
@@ -624,24 +713,17 @@ function agendar() {
 Array.prototype.forEach.call(document.querySelectorAll('.tab-btn'), function (b) {
   b.addEventListener('click', function () { trocarAba(b.getAttribute('data-tab')); });
 });
-document.getElementById('btn-asset-topo').addEventListener('click', function () {
-  document.getElementById('input-asset-topo').click();
+Object.keys(ASSETS).forEach(function (slot) {
+  var btn = document.getElementById('btn-asset-' + slot);
+  var input = document.getElementById('input-asset-' + slot);
+  btn.addEventListener('click', function () { input.click(); });
+  input.addEventListener('change', function (e) {
+    var file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (file) { trocarAsset(slot, file, btn); }
+  });
 });
-document.getElementById('input-asset-topo').addEventListener('change', function (e) {
-  var file = e.target.files && e.target.files[0];
-  var btn = document.getElementById('btn-asset-topo');
-  e.target.value = '';
-  if (file) { trocarAsset('topo', file, btn); }
-});
-document.getElementById('btn-asset-rodape').addEventListener('click', function () {
-  document.getElementById('input-asset-rodape').click();
-});
-document.getElementById('input-asset-rodape').addEventListener('change', function (e) {
-  var file = e.target.files && e.target.files[0];
-  var btn = document.getElementById('btn-asset-rodape');
-  e.target.value = '';
-  if (file) { trocarAsset('rodape', file, btn); }
-});
+document.getElementById('btn-limpar').addEventListener('click', limparEncerrados);
 document.getElementById('btn-upload').addEventListener('click', function () {
   document.getElementById('input-upload').click();
 });
