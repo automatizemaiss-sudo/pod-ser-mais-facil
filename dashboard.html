@@ -96,6 +96,8 @@
   .vcorte { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; background: var(--surface-1); }
   .vcorte summary { cursor: pointer; font-size: 13px; }
   .vcorte p { margin: 8px 0 0; font-size: 13px; color: var(--ink-2); white-space: pre-wrap; }
+  .asset-prev { margin: 10px 0; min-height: 60px; }
+  .asset-prev img { max-width: 100%; max-height: 260px; border-radius: 8px; border: 1px solid var(--line); display: block; margin-bottom: 6px; background: var(--grid); }
   .grupo { margin-bottom: 10px; }
   .grupo > summary { cursor: pointer; font-weight: 600; padding: 12px 14px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; list-style: none; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
   .grupo > summary::-webkit-details-marker { display: none; }
@@ -224,17 +226,20 @@
     <div class="asset-row">
       <div class="job asset-card">
         <div class="job-name">Topo</div>
+        <div class="asset-prev" id="prev-topo"><span class="job-meta">carregando imagem atual…</span></div>
         <button id="btn-asset-topo">Trocar imagem de topo</button>
         <input type="file" id="input-asset-topo" accept="image/*" class="hidden">
       </div>
       <div class="job asset-card">
         <div class="job-name">Rodapé</div>
+        <div class="asset-prev" id="prev-rodape"><span class="job-meta">carregando imagem atual…</span></div>
         <button id="btn-asset-rodape">Trocar imagem de rodapé</button>
         <input type="file" id="input-asset-rodape" accept="image/*" class="hidden">
       </div>
       <div class="job asset-card">
         <div class="job-name">CTA (final do vídeo)</div>
         <div class="job-meta">Imagem de 3 segundos exibida no fim de cada corte. Formato vertical 1080×1920.</div>
+        <div class="asset-prev" id="prev-cta"><span class="job-meta">carregando imagem atual…</span></div>
         <button id="btn-asset-cta">Trocar imagem de CTA</button>
         <input type="file" id="input-asset-cta" accept="image/*" class="hidden">
       </div>
@@ -668,6 +673,7 @@ function trocarAba(nome) {
     b.setAttribute('aria-pressed', String(b.getAttribute('data-tab') === nome));
   });
   if (nome === 'cortes') { carregarCortes(false); }
+  if (nome === 'imagens') { carregarAssets(); }
 }
 
 // a API também devolve as pastas "Cortes ..."; aqui ficam só os arquivos de vídeo
@@ -717,6 +723,28 @@ function carregarCortes(silencioso) {
     });
 }
 
+function carregarAssets() {
+  fetch(API + '/assets', { cache: 'no-store', headers: headersAuth() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var a = (d && d.assets) || {};
+      Object.keys(ASSETS).forEach(function (slot) {
+        var el = document.getElementById('prev-' + slot);
+        var x = a[slot];
+        if (!el) { return; }
+        if (!x || !x.imagem) { el.innerHTML = '<span class="job-meta">Não consegui mostrar a imagem atual.</span>'; return; }
+        el.innerHTML = '<img src="' + esc(x.imagem) + '" alt="Imagem atual de ' + esc(ASSETS[slot].rotulo) + '">'
+          + '<span class="job-meta">Atual: ' + esc(x.nome) + (x.atualizado_em ? ' · trocada em ' + esc(new Date(x.atualizado_em).toLocaleString('pt-BR')) : '') + '</span>';
+      });
+    })
+    .catch(function () {
+      Object.keys(ASSETS).forEach(function (slot) {
+        var el = document.getElementById('prev-' + slot);
+        if (el) { el.innerHTML = '<span class="job-meta">Não consegui carregar a imagem atual.</span>'; }
+      });
+    });
+}
+
 // ── imagens padrão ────────────────────────────────────────
 function trocarAsset(slot, file, botao) {
   var banner = document.getElementById('banner-asset');
@@ -739,6 +767,7 @@ function trocarAsset(slot, file, botao) {
       banner.className = 'banner info show';
       banner.innerHTML = '✓ Imagem de ' + esc(nome) + ' atualizada. Vale a partir do próximo vídeo processado.';
       botao.disabled = false;
+      setTimeout(carregarAssets, 3000);
       setTimeout(function () { banner.className = 'banner info'; }, 6000);
     })
     .catch(function () {
