@@ -93,6 +93,16 @@
   .asset-card { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
   .asset-card .job-meta { margin-top: -4px; }
 
+  .vcorte { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; background: var(--surface-1); }
+  .vcorte summary { cursor: pointer; font-size: 13px; }
+  .vcorte p { margin: 8px 0 0; font-size: 13px; color: var(--ink-2); white-space: pre-wrap; }
+  .grupo { margin-bottom: 10px; }
+  .grupo > summary { cursor: pointer; font-weight: 600; padding: 12px 14px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; list-style: none; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+  .grupo > summary::-webkit-details-marker { display: none; }
+  .grupo > summary::before { content: '▸'; color: var(--muted); }
+  .grupo[open] > summary::before { content: '▾'; }
+  .grupo .cnt { color: var(--ink-2); font-weight: 400; font-size: 13px; }
+  .grupo .itens { padding: 8px 0 0 14px; }
   .corte-item { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .corte-item .nome { font-weight: 600; }
   .corte-thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; flex: none; background: var(--grid); }
@@ -246,6 +256,8 @@
   <div class="panel-body">
     <h2 class="section">Etapas</h2>
     <ol class="timeline" id="timeline"></ol>
+    <h2 class="section">Cortes propostos (validação)</h2>
+    <div id="validacao" class="validacao"></div>
     <h2 class="section">Log</h2>
     <div class="log" id="log"></div>
   </div>
@@ -298,7 +310,7 @@ var ASSETS = {
   cta:    { rotulo: 'CTA' }
 };
 
-var estado = { jobs: [], resumo: null, auto: true, tabela: false, timer: null, jobAberto: null, aba: 'execucoes' };
+var estado = { jobs: [], resumo: null, auto: true, tabela: false, timer: null, jobAberto: null, aba: 'execucoes', gruposAbertos: {} };
 
 // ── utilidades ────────────────────────────────────────────
 function esc(s) {
@@ -359,8 +371,21 @@ function renderBanners(r) {
   } else { be.className = 'banner critical'; }
   if (r.travados > 0) {
     bt.className = 'banner serious show';
-    bt.innerHTML = '⚠ <b>' + r.travados + '</b> execuç' + (r.travados === 1 ? 'ão está' : 'ões estão') + ' sem dar sinal há mais de 30 min.';
+    bt.innerHTML = '⚠ <b>' + r.travados + '</b> execuç' + (r.travados === 1 ? 'ão está' : 'ões estão') + ' sem dar sinal acima do limite (30 min ou 2× o tempo previsto da etapa).';
   } else { bt.className = 'banner serious'; }
+}
+
+function acima(j) {
+  var eta = Number(j.eta_seg || 0), passou = Number(j.parado_ha_seg || 0);
+  return Math.max(0, passou - eta);
+}
+
+// ETA calculado a partir da última atualização: previsto (eta_seg) menos o tempo desde então
+function etaTexto(j) {
+  var eta = Number(j.eta_seg || 0), passou = Number(j.parado_ha_seg || 0);
+  var resta = eta - passou;
+  if (resta > 0) { return 'faltam ~' + dur(resta); }
+  return 'acima do previsto há ' + dur(acima(j));
 }
 
 function renderBotaoLimpar(jobs) {
@@ -380,7 +405,7 @@ function renderCards(jobs) {
     var ev = estadoVisual(j);
     var prog = Math.max(0, Math.min(100, Number(j.progresso) || 0));
     var eta = (j.status === 'rodando')
-      ? 'faltam ~' + dur(j.eta_restante_seg)
+      ? etaTexto(j)
       : (j.status === 'aguardando' ? 'esperando resposta no WhatsApp' : '');
     var pasta = j.drive_folder_url
       ? '<a href="' + esc(j.drive_folder_url) + '" target="_blank" rel="noopener">Abrir pasta no Drive</a>' : '';
@@ -424,7 +449,7 @@ function renderTabela(jobs) {
         + '<td>' + chip(ev) + '</td>'
         + '<td>' + esc(j.etapa_label || j.etapa_atual) + '</td>'
         + '<td class="num">' + (j.progresso || 0) + '%</td>'
-        + '<td class="num">' + (j.status === 'rodando' ? dur(j.eta_restante_seg) : '—') + '</td>'
+        + '<td class="num">' + (j.status === 'rodando' ? (Number(j.eta_seg || 0) - Number(j.parado_ha_seg || 0) > 0 ? dur(Number(j.eta_seg || 0) - Number(j.parado_ha_seg || 0)) : '+' + dur(acima(j)) + ' acima') : '—') + '</td>'
         + '<td class="num">' + dur(j.parado_ha_seg) + '</td></tr>';
     }).join('') + '</tbody></table>';
 }
@@ -453,6 +478,7 @@ function abrirJob(jobId) {
   document.getElementById('panel').classList.add('show');
   document.getElementById('overlay').classList.add('show');
   carregarLog(jobId);
+  carregarValidacao(j);
 }
 
 function aprovarJob(jobId, decisao, botao) {
@@ -601,6 +627,37 @@ function carregarLog(jobId) {
     });
 }
 
+function mmss(seg) {
+  seg = Math.max(0, Math.round(Number(seg) || 0));
+  var m = Math.floor(seg / 60), s = seg % 60;
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+function carregarValidacao(j) {
+  var el = document.getElementById('validacao');
+  var id = j.sequencia_id || j.job_id;
+  el.innerHTML = '<div class="job-meta">carregando cortes propostos…</div>';
+  fetch(API + '/validacao?id=' + encodeURIComponent(id), { cache: 'no-store', headers: headersAuth() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (estado.jobAberto !== j.job_id) { return; }
+      if (!d || !d.ok) {
+        el.innerHTML = '<div class="job-meta">' + esc((d && d.erro) || 'Cortes propostos indisponíveis para este job.') + '</div>';
+        return;
+      }
+      if (!d.cortes.length) { el.innerHTML = '<div class="job-meta">O arquivo de validação não tem cortes.</div>'; return; }
+      var total = d.cortes.reduce(function (a, c) { return a + (c.duracao_seg || 0); }, 0);
+      el.innerHTML = '<div class="job-meta" style="margin-bottom:8px">' + d.total + ' cortes · ' + mmss(total) + ' no total</div>'
+        + d.cortes.map(function (c) {
+          return '<details class="vcorte"><summary><b>Corte ' + esc(c.numero) + '</b> · ' + mmss(c.inicio_seg) + '–' + mmss(c.fim_seg)
+            + ' (' + dur(c.duracao_seg) + ')' + (c.titulo ? ' · ' + esc(c.titulo) : '') + '</summary>'
+            + '<p>' + esc(c.texto || '(sem texto)') + '</p>'
+            + (c.motivo ? '<p class="job-meta">Motivo: ' + esc(c.motivo) + '</p>' : '') + '</details>';
+        }).join('');
+    })
+    .catch(function () { el.innerHTML = '<div class="job-meta">Não consegui carregar os cortes propostos.</div>'; });
+}
+
 // ── abas ──────────────────────────────────────────────────
 function trocarAba(nome) {
   estado.aba = nome;
@@ -627,17 +684,33 @@ function carregarCortes(silencioso) {
         el.innerHTML = '<div class="empty">Nenhum corte pronto ainda.</div>';
         return;
       }
-      el.innerHTML = cortes.map(function (c) {
-        var thumb = c.thumbnail
-          ? '<img src="' + esc(c.thumbnail) + '" alt="" class="corte-thumb" onerror="this.remove()">'
-          : '';
-        return '<article class="job"><div class="corte-item">'
-          + thumb
-          + '<div style="flex:1"><div class="nome">' + esc(c.arquivo_nome) + '</div>'
-          + '<div class="job-meta">' + esc(c.nome_video || c.job_id) + (c.criado_em ? ' · ' + esc(new Date(c.criado_em).toLocaleString('pt-BR')) : '') + '</div></div>'
-          + (c.link ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener">Abrir no Drive</a>' : '')
-          + '</div></article>';
+      var grupos = {}, ordem = [];
+      cortes.forEach(function (c) {
+        var k = c.pasta_id || c.nome_video || '?';
+        if (!grupos[k]) { grupos[k] = { pasta: c.pasta_id, nome: c.nome_video || 'Sem nome', itens: [] }; ordem.push(k); }
+        grupos[k].itens.push(c);
+      });
+      el.innerHTML = ordem.map(function (k) {
+        var g = grupos[k];
+        g.itens.sort(function (a, b) { return String(a.arquivo_nome).localeCompare(String(b.arquivo_nome), 'pt-BR', { numeric: true }); });
+        var recente = g.itens.reduce(function (m, c) { return c.criado_em && c.criado_em > m ? c.criado_em : m; }, '');
+        var aberto = estado.gruposAbertos[k] ? ' open' : '';
+        var linkPasta = g.pasta ? '<a href="https://drive.google.com/drive/folders/' + esc(g.pasta) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Abrir pasta</a>' : '';
+        return '<details class="grupo" data-grupo="' + esc(k) + '"' + aberto + '><summary><span>' + esc(g.nome) + '</span>'
+          + '<span class="cnt">' + g.itens.length + (g.itens.length === 1 ? ' corte' : ' cortes') + (recente ? ' · ' + esc(new Date(recente).toLocaleString('pt-BR')) : '') + '</span>'
+          + linkPasta + '</summary><div class="itens">'
+          + g.itens.map(function (c) {
+            var thumb = c.thumbnail ? '<img src="' + esc(c.thumbnail) + '" alt="" class="corte-thumb" onerror="this.remove()">' : '';
+            return '<article class="job"><div class="corte-item">' + thumb
+              + '<div style="flex:1"><div class="nome">' + esc(c.arquivo_nome) + '</div>'
+              + '<div class="job-meta">' + (c.criado_em ? esc(new Date(c.criado_em).toLocaleString('pt-BR')) : '') + '</div></div>'
+              + (c.link ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener">Abrir no Drive</a>' : '')
+              + '</div></article>';
+          }).join('') + '</div></details>';
       }).join('');
+      Array.prototype.forEach.call(el.querySelectorAll('details.grupo'), function (dt) {
+        dt.addEventListener('toggle', function () { estado.gruposAbertos[dt.getAttribute('data-grupo')] = dt.open; });
+      });
     })
     .catch(function () {
       if (!silencioso) { el.innerHTML = '<div class="empty">Não consegui carregar os cortes prontos.</div>'; }
